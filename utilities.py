@@ -2,12 +2,17 @@ from django.http import HttpResponseRedirect, HttpRequest, HttpResponse
 from django.core.urlresolvers import reverse
 from urllib import urlencode
 from django.shortcuts import _get_queryset, render_to_response as rtr
-from helpers.decorators import BaseDecorator, decorator_factory
 #from helpers.middleware.thread import get_request
 from django.template.context import Context, RequestContext
 from functools import wraps
+from decorator import decorator
+from functools import partial
 
 PARAM_PREFIX = 'f_' #I consider this an improvement over the django version
+
+def decorator_factory(decfac): # partial is functools.partial
+    "decorator_factory(decfac) returns a one-parameter family of decorators"
+    return partial(lambda df, param: decorator(partial(df, param)), decfac)
 
 
 def redirect(*args, **kwargs):
@@ -56,22 +61,22 @@ def direct_to_template(request, template, extra_context=None, mimetype=None, **k
             dictionary[key] = value
     return render_to_response(request, template, dictionary, mimetype=mimetype)
 
-class no_debug(BaseDecorator):
+@decorator_factory
+def no_debug(func, request, *args, **kw):
     """ Prevents any debugging output for this view.
     This decorator can only be run on a view or anything with
     an HttpRequest as the first parameter."""
-    def _dec(self, request, *args, **kwargs):
-        if isinstance(request, HttpRequest):
-            request._no_debug = True
-        return self._func(request, *args, **kwargs)
+    if isinstance(request, HttpRequest):
+        request._no_debug = True
+    return self._func(request, *args, **kw)
 
 
-class login_required(BaseDecorator):
-    def _dec(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
-            request.flash.neutral = "You need to login or create a new user to participate"
-            return redirect('main.views.signin', qs={'next': request.get_full_path()})
-        return super(login_required, self)._dec(request, *args, **kwargs)
+@decorator_factory
+def login_required(func, request, *args, **kw):
+    if not request.user.is_authenticated():
+        request.flash.neutral = "You need to login or create a new user to participate"
+        return redirect('main.views.signin', qs={'next': request.get_full_path()})
+    return super(login_required, self)._dec(request, *args, **kw)
 
 @decorator_factory
 def render_to(template, func, request, *args, **kw):

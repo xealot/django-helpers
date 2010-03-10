@@ -15,6 +15,7 @@ class DataTable(object):
         self.output = []
         self.wrapper = wrapper
         self.classes = classes
+        self.last_value = None
 
     def flush(self):
         return SafeUnicode(''.join(self.output))
@@ -28,39 +29,48 @@ class DataTable(object):
     def close_wrapper(self, **kwargs):
         self.writer(u'</table>')
 
-    def render(self, queryset, fields=None, group=None, filter=None, row_filter=None, add_sort=False, stop_at=None, header=True, cap=None, footer=False, listfield_callback=None, **kwargs):
+    def render(self, queryset, fields=None, group=None, filter=None, row_filter=None, add_sort=False, stop_at=None, header=True, footer=False, listfield_callback=None):
+        self.fields = fields
+        self.group = group
+        self.filter = filter
+        self.row_filter = row_filter
+        self.add_sort = add_sort
+        self.header = header
+        self.footer = footer
+        self.listfield_callback = listfield_callback
+        
         if self.wrapper:
             self.open_wrapper(self.classes)
         
-        row = 0
-        stop_at = int(stop_at) if stop_at is not None else None
+        self.stop_at = int(stop_at) if stop_at is not None else None
+        self.row = 0
     
         if fields is None:
             fields = fields_for_model(queryset.model).keys()
     
         #Turn all columns into a list of (field, name)
         #:TODO: can fields exist as a dict instead of a list of two-tuples?
-        columns = []
+        self.columns = []
         for f in fields:
             if isinstance(f, tuple):
-                columns.append(f)
+                self.columns.append(f)
             else:
-                columns.append((f,f)) #Synthesize tuple
+                self.columns.append((f,f)) #Synthesize tuple
         
         #Table Header
-        if self.should_render_header(**dict([x for x in locals().items() if x[0] != 'self'])):
-            self.render_headers(columns, add_sort=False, cap=False)
+        if self.should_render_header():
+            self.render_headers()
     
         #Table Body
         self.writer(u'<tbody>')
         if queryset:
-            last_value = None
+            self.last_value = None
             
             for obj in queryset:
-                row += 1
+                self.row += 1
                 #Handle group by rendering
-                if group:
-                    last_value = self.attempt_group(group, obj, columns, last_value)
+                if self.should_render_group(obj):
+                    self.render_group(obj, self.last_value)
                 
                 #Custom Row handler
                 if row_filter is not None and hasattr(self.caller, row_filter):
@@ -70,11 +80,9 @@ class DataTable(object):
     
                 #Render each column
                 column_index = 1
-                for key, label in columns:
-                    self.render_column(obj, key, label, columns, column_index, filter, listfield_callback, **kwargs)
+                for key, label in self.columns:
+                    self.render_column(obj, key, label, column_index)
                     column_index += 1
-                if cap is not None:
-                    self.writer(u'<td style="white-space:nowrap;">', getattr(caller, cap)(obj), u'</td>')
                 self.writer(u'</tr>')
                 
                 #Stop for stop_at
@@ -84,32 +92,30 @@ class DataTable(object):
             self.writer(u'<tr><td colspan="', len(columns), u'">There are no entries</td></tr>')
         self.writer(u'</tbody>')
 
-        if self.should_render_footer(**dict([x for x in locals().items() if x[0] != 'self'])):
+        if self.should_render_footer():
             self.render_footer(context, columns)
 
         if self.wrapper:
             self.close_wrapper()
     
-    def should_render_header(self, **kwargs):
-        return header
+    def should_render_header(self):
+        return self.header
 
-    def should_render_footer(self, **kwargs):
-        return footer
+    def should_render_footer(self):
+        return self.footer
 
-    def render_header(self, field, label, add_sort, cap):
+    def render_header(self, field, label):
         heading = pretty_name(label) if label is not None else ''
         th = self.REGULAR_COL if label is not None else self.WIDGET_COL
-        if add_sort:
+        if self.add_sort:
             self.writer(th, u'<a href="" class="ajaxSort" rel="', field, u'">', heading, u'</a>', u'</th>')
         else:
             self.writer(th, heading, u'</th>')
         
-    def render_headers(self, columns, add_sort=False, cap=False):
+    def render_headers(self):
         self.writer(u'<thead><tr class="hrow headers">')
-        for field, label in columns:
-            self.render_header(field, label, add_sort, cap)
-        if cap is not False:
-            self.writer(WIDGET_COL, u'</th>')
+        for field, label in self.columns:
+            self.render_header(field, label)
         self.writer(u'</tr></thead>')
     
     def render_footer(self, columns):
@@ -150,35 +156,43 @@ class DataTable(object):
             </tr>
         </tfoot>""" % params)
     
-    def attempt_group(self, group, obj, columns, last_value=None):
-        value = self.get_group_value(group, obj, columns)
+    def should_render_group(self, obj):
+        if not self.group:
+            return False
+
+        value = self.get_group_value(obj)
         
-        if last_value is None or value != last_value:
-            self.render_group(group, obj, columns, value)
-        return value
+        if self.last_value is None or value != self.last_value:
+            self.last_value = value
+            return True
+        return False
     
-    def get_group_value(self, group, obj, columns):
-        value = getattr(obj, group)
+    def get_group_value(self, obj):
+        if isinstance(obj, dict):
+            value = obj[self.group]
+        else:
+            value = getattr(obj, self.group)
+            
         if isinstance(value, (date, datetime)):
             value = defaultfilters.date(value)
         return value
     
-    def get_group_render_value(self, group, obj, columns, value):
+    def get_group_render_value(self, obj, value):
         return value
 
-    def render_group(self, group, obj, columns, value):
-        self.writer(u'<tr><td colspan="', len(columns), u'" class="tr_group">')
-        self.writer(self.get_group_render_value(group, obj, columns, value))
+    def render_group(self, obj, value):
+        self.writer(u'<tr><td colspan="', len(self.columns), u'" class="tr_group">')
+        self.writer(self.get_group_render_value(obj, value))
         self.writer(u'</td></tr>')
 
-    def get_column_value(self, obj, key, label, columns, column_index, filter, listfield_callback, **kwargs):
+    def get_column_value(self, obj, key, label, column_index):
         #:TODO: this function could use a lot of optimization in the form of returning early and saving checks to variables.
         #listfield callback handling
-        if listfield_callback:
-            if key in listfield_callback:
-                return listfield_callback[key](key, obj, context)
-            if column_index in listfield_callback:
-                return listfield_callback[column_index](key, obj, context)
+        if self.listfield_callback:
+            if key in self.listfield_callback:
+                return self.listfield_callback[key](key, obj)
+            if column_index in self.listfield_callback:
+                return self.listfield_callback[column_index](key, obj)
         
         #:TODO: depcreate:: DO NOT FILTER this through ANY function 
         if filter is False:
@@ -190,7 +204,7 @@ class DataTable(object):
         #Default
         return display_attribute({}, obj, key, max_length=65, if_none="--")
 
-    def render_column(self, obj, key, label, columns, column_index, filter, listfield_callback, **kwargs):
+    def render_column(self, obj, key, label, column_index):
         self.writer(u'<td>')
-        self.writer(self.get_column_value(obj, key, label, columns, column_index, filter, listfield_callback, **kwargs))
+        self.writer(self.get_column_value(obj, key, label, column_index))
         self.writer(u'</td>')

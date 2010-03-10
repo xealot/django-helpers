@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 
 from django.db import models
 from django.utils.html import escape
