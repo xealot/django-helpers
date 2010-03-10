@@ -1,8 +1,6 @@
 import os.path
 from django.template.defaulttags import CsrfTokenNode
 import datetime
-from django.db.models.fields import FieldDoesNotExist
-from decimal import Decimal
 
 from django.conf import settings
 from django.template import defaultfilters as filters
@@ -10,15 +8,11 @@ from django.forms.forms import pretty_name
 from django.db import models
 from django.utils import dateformat
 from django.utils.html import escape
-from django.utils.text import capfirst
 from django.utils.encoding import force_unicode
 from django.utils.safestring import SafeData, EscapeData, mark_safe
-from django.utils.translation import get_date_formats
 from django.contrib.humanize.templatetags import humanize
 
 from helpers import templates as general_templates
-
-EMPTY_CHANGELIST_VALUE = '(None)'
 
 def safe(obj):
     text = force_unicode(obj)
@@ -83,10 +77,6 @@ def mediaurl(context, value, base_url=None):
 def display_attribute(context, obj, attribute, max_length=None, if_trunc="...", if_none="No %(attribute)s", if_date=None):
     return general_templates(obj, attribute, max_length, if_trunc, if_none, if_date)
 
-def _boolean_icon(field_val):
-    BOOLEAN_MAPPING = {True: 'yes', False: 'no', None: 'unknown'}
-    return mark_safe(u'<img src="%simg/admin/icon-%s.gif" alt="%s" />' % (settings.ADMIN_MEDIA_PREFIX, BOOLEAN_MAPPING[field_val], field_val))
-
 def css_tags(context, media_url='/public'):
     if hasattr(settings, 'DEPLOY_CSS'):
         output = []
@@ -102,45 +92,3 @@ def js_tags(context, media_url='/public'):
             output.append('<script src="%s/js/%s" type="text/javascript"></script>' % (media_url, t))
         return '\n'.join(output)
     return ''
-
-#CRUMB_ROOT = 'crumb_root'
-#CRUMB_LIST = 'crumb_list'
-#def add_crumb(context, name, view_name, root=False, args=None, kwargs=None):
-#    obj = {'name':name, 'view_name': view_name, 'args': args, 'kwargs': kwargs}
-#    if not root:
-#        #Add to session, do not duplicate
-#        session = context['request'].session
-#        if CRUMB_LIST not in session:
-#            session[CRUMB_LIST] = []
-#        if len(session[CRUMB_LIST]) > 50:
-#            session[CRUMB_LIST] = session[CRUMB_LIST][-50:]
-#        #if obj not in session:
-#        session[CRUMB_LIST].append(obj)
-#    else:
-#        if CRUMB_ROOT not in context['attributes']:
-#            context['attributes'][CRUMB_ROOT] = []
-#        context['attributes'][CRUMB_ROOT].append(obj)
-#    return ''
-#
-#def show_crumbs(context):
-#    atts = context['attributes']
-#    session = context['request'].session
-#    output = ''
-#    print atts
-#    if CRUMB_ROOT in atts and atts[CRUMB_ROOT]:
-#        roots = []
-#        for crumb in atts[CRUMB_ROOT]:
-#            roots.append("<a href="+url(context, crumb['view_name'], crumb['args'], crumb['kwargs'])+">"+crumb['name']+"</a>")
-#        output += ' ++ '.join(roots)
-#    if CRUMB_LIST in session and session[CRUMB_LIST]:
-#        crumbs = []
-#        for crumb in session[CRUMB_LIST][-5:]:
-#            crumbs.append("<a href="+url(context, crumb['view_name'], crumb['args'], crumb['kwargs'])+">"+crumb['name']+"</a>")
-#        output += ' -- '.join(crumbs)
-#    return output
-
-
-
-
-
-

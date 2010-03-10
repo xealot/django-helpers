@@ -2,7 +2,13 @@ import datetime
 from decimal import Decimal
 
 from django.db import models
+from django.db.models.fields import FieldDoesNotExist
 from django.utils.html import escape
+from django.utils.safestring import mark_safe
+from django.utils.text import capfirst
+from django.utils.translation import get_date_formats
+
+EMPTY_CHANGELIST_VALUE = '(None)'
 
 #:TODO: REFACTOR THIS, from 66:105 was clipped in from django admin.
 def display_attribute(context, obj, attribute, max_length=None, if_trunc="...", if_none="No %(attribute)s", if_date=None):
@@ -76,3 +82,6 @@ def general_formatter(value, cast=None, **kwargs):
                                                           result_repr[:kwargs['max_length']-len(kwargs.get('truncate', ''))] + kwargs.get('truncate', '')))
     return result_repr
 
+def _boolean_icon(field_val):
+    BOOLEAN_MAPPING = {True: 'yes', False: 'no', None: 'unknown'}
+    return mark_safe(u'<img src="%simg/admin/icon-%s.gif" alt="%s" />' % (settings.ADMIN_MEDIA_PREFIX, BOOLEAN_MAPPING[field_val], field_val))
