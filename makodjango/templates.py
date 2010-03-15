@@ -67,14 +67,14 @@ def allowed(context, key):
     return context['request'].user.has_perm(key)
 
 def display_attribute(context, obj, attribute, max_length=None, if_trunc="...", if_none="No %(attribute)s", if_date=None):
-    return dhtags.display_attribute(context, obj, attribute, max_length, if_trunc, if_none, if_date)
+    return dhtags.display_attribute(obj, attribute, max_length, if_trunc, if_none, if_date)
 
 #http://www.davidcramer.net/code/429/scaling-your-frontend-far-futures-headers-and-template-tags.html
 def mediaurl(context, value, base_url=None):
-    return dhtags.mediaurl(context, value, base_url=None)
+    return dhtags.mediaurl(value, base_url=None)
 
 def css_tags(context, media_url='/public'):
-    return dhtags.css_tags(context, media_url=media_url)
+    return dhtags.css_tags(media_url=media_url)
 
 def js_tags(context, media_url='/public'):
-    return dhtags.js_tags(context, media_url=media_url)
+    return dhtags.js_tags(media_url=media_url)

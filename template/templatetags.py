@@ -14,7 +14,7 @@ EMPTY_CHANGELIST_VALUE = '(None)'
 date_format, datetime_format, time_format = get_date_formats()
 
 #:TODO: REFACTOR THIS, from 66:105 was clipped in from django admin.
-def display_attribute(context, obj, attribute, max_length=None, if_trunc="...", if_none="No %(attribute)s", if_date=None):
+def display_attribute(obj, attribute, max_length=None, if_trunc="...", if_none="No %(attribute)s", if_date=None):
     format_kw = {'max_length': max_length, 'truncate': if_trunc, 'null': if_none, 'empty': if_none, 'attribute': attribute}
  
     #output = unicode(value)
@@ -97,7 +97,7 @@ def mediaurl(context, value, base_url=None):
         raise ValueError("Media must be located within MEDIA_ROOT.")
     return '%s%s?%s' % (base_url, value, unicode(int(os.stat(fname).st_mtime)))
 
-def css_tags(context, media_url='/public'):
+def css_tags(media_url='/public'):
     if hasattr(settings, 'DEPLOY_CSS'):
         output = []
         for t in settings.DEPLOY_CSS:
@@ -105,7 +105,7 @@ def css_tags(context, media_url='/public'):
         return '\n'.join(output)
     return ''
 
-def js_tags(context, media_url='/public'):
+def js_tags(media_url='/public'):
     if hasattr(settings, 'DEPLOY_JS'):
         output = []
         for t in settings.DEPLOY_JS:
