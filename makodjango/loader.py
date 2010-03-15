@@ -3,7 +3,7 @@ from mako import exceptions
 from django.template.loaders import filesystem
 from django.conf import settings
 from django.template import TemplateDoesNotExist
-from helpers.makodjango.template import Template
+from template import Template
 import tempfile
 
 directories      = getattr(settings, 'MAKO_TEMPLATE_DIRS', settings.TEMPLATE_DIRS)
