@@ -20,3 +20,10 @@ class Template(object):
             if settings.DEBUG:
                 return HttpResponse(exceptions.html_error_template().render())
             raise
+
+def get_template_from_string(source, origin=None, name=None):
+    """
+    Returns a compiled Template object for the given template code,
+    handling template inheritance recursively.
+    """
+    return MakoTemplate(source)

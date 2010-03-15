@@ -1,10 +1,9 @@
-from django.http import HttpResponseRedirect, HttpRequest, HttpResponse
+from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from urllib import urlencode
 from django.shortcuts import _get_queryset, render_to_response as rtr
 #from helpers.middleware.thread import get_request
-from django.template.context import Context, RequestContext
-from functools import wraps
+from django.template.context import RequestContext
 from decorator import decorator
 from functools import partial
 
@@ -60,16 +59,6 @@ def direct_to_template(request, template, extra_context=None, mimetype=None, **k
         else:
             dictionary[key] = value
     return render_to_response(request, template, dictionary, mimetype=mimetype)
-
-@decorator_factory
-def no_debug(func, request, *args, **kw):
-    """ Prevents any debugging output for this view.
-    This decorator can only be run on a view or anything with
-    an HttpRequest as the first parameter."""
-    if isinstance(request, HttpRequest):
-        request._no_debug = True
-    return self._func(request, *args, **kw)
-
 
 @decorator_factory
 def login_required(func, request, *args, **kw):

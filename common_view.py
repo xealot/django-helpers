@@ -24,11 +24,11 @@ from django.db import transaction
 from django.db.transaction import commit_on_success
 from django.db.models import Q
 from django.db.models.aggregates import Count
-from helpers.tablejax import ajax_table_page
-from helpers.utilities import direct_to_template, post_data, render_to_response, redirect, redirect_to_referrer, render_to
+from tablejax import ajax_table_page
+from utilities import direct_to_template, post_data, render_to_response, redirect, redirect_to_referrer, render_to
 
 
 
 
 from django.contrib.auth.decorators import login_required
-from helpers.utilities import render_to_response as r2r
+from utilities import render_to_response as r2r
