@@ -27,8 +27,8 @@ class DataTableMako(DataTable):
         self.capture = context.get('capture', runtime.UNDEFINED)
         
         try:
-            if fields is None or fields is runtime.UNDEFINED:
-                fields = fields_for_model(queryset.model).keys()
+            if fields is runtime.UNDEFINED:
+                fields = None
             
             super(DataTableMako, self).render(queryset, fields, group, filter, row_filter, add_sort, stop_at, header, footer, listfield_callback, **kwargs)
         finally:
@@ -59,10 +59,6 @@ class DataTableMako(DataTable):
         if hasattr(self.caller, 'td_%s' % key):
             return self.capture(getattr(self.caller, 'td_%s' % key), obj)
         
-        # TODO: WHAT WAS THIS FOR?
-        #if 'next' in kwargs and hasattr(kwargs['next'], key):
-        #    return self.capture(getattr(kwargs['next'], key), key, obj)
-    
         #:TODO: is this even used? Deprecate... :: Filter this through specified function
         if self.filter is not None and hasattr(self.caller, self.filter):
             return self.capture(getattr(self.caller, self.filter), obj, key)
