@@ -115,7 +115,7 @@ class DataTableMako(DataTable):
             </tr>
         </tfoot>""" % params)
     
-def render_vertical(data, fields=None):
+def render_vertical(context, data, fields=None):
     columns, output = [], []
     if not isinstance(data, dict):
         data = data.__dict__
@@ -132,3 +132,4 @@ def render_vertical(data, fields=None):
     for f in fields:
         output.append(u'<tr><th>%s:</th><td>%s</td></tr>' % (f, data[f]))
     output.append(u'</table>')
+    return SafeUnicode(''.join(output))
