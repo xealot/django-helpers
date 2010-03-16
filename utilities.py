@@ -4,15 +4,31 @@ from urllib import urlencode
 from django.shortcuts import _get_queryset, render_to_response as rtr
 #from helpers.middleware.thread import get_request
 from django.template.context import RequestContext
-#from decorator import decorator
-from functools import partial, wraps
+from decorator import decorator
+from functools import partial
 
 PARAM_PREFIX = 'f_' #I consider this an improvement over the django version
 
-#def decorator_factory(decfac): # partial is functools.partial
-#    "decorator_factory(decfac) returns a one-parameter family of decorators"
-#    return partial(lambda df, param: decorator(partial(df, param)), decfac)
+def decorator_factory(decfac): # partial is functools.partial
+    "decorator_factory(decfac) returns a one-parameter family of decorators"
+    return partial(lambda df, param: decorator(partial(df, param)), decfac)
 
+@decorator_factory
+def render_to(template, func, request, *args, **kw):
+    """
+    A decorator for view functions which will accept a template parameter 
+    and then execute render_to_response. Views should return a context.
+    
+    @render_to('template')
+    def view_func(request):
+        return {'form': form}
+    """
+    output = func(request, *args, **kw)
+    if isinstance(output, (list, tuple)):
+        return render_to_response(request, output[1], output[0])
+    elif isinstance(output, dict):
+        return render_to_response(request, template, output)
+    return output
 
 def redirect(*args, **kwargs):
     """Creates a redirect response and accepts the same parameters as reverse.
@@ -59,31 +75,6 @@ def direct_to_template(request, template, extra_context=None, mimetype=None, **k
         else:
             dictionary[key] = value
     return render_to_response(request, template, dictionary, mimetype=mimetype)
-
-#Uncomment and fix if the alternative breaks gavs crazy introspection
-#@decorator_factory
-#def render_to(template, func, request, *args, **kw):
-#    output = func(request, *args, **kw)
-#    if isinstance(output, (list, tuple)):
-#        return render_to_response(request, output[1], output[0])
-#    elif isinstance(output, dict):
-#        return render_to_response(request, template, output)
-#    return output
-
-def render_to(func):
-    """
-    Decorator for automatically calling render to response on a view function. The view 
-    simply needs to return a context (dictionary) to pass to the template. 
-    """
-    @wraps(func)
-    def wrapper(template, func, request, *args, **kw):
-        output = func(request, *args, **kw)
-        if isinstance(output, (list, tuple)):
-            return render_to_response(request, output[1], output[0])
-        elif isinstance(output, dict):
-            return render_to_response(request, template, output)
-        return output
-    return wrapper
 
 def render_to_response(request, template, dictionary=None, no_debug=False, cookies=None, **kwargs):
     """
