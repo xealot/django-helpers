@@ -36,6 +36,7 @@ class DataTableMako(DataTable):
             row_callback = getattr(self.caller, row_filter)
             #self.writer(getattr(self.caller, row_filter(obj)))
 
+        #:TODO: this should be cache as to not re-run in the super class
         #Create listfield callback out of mako specfic variables
         columns = DataTableMako.expand_fields(queryset, fields)
         for key,label in columns:
