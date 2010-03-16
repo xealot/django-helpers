@@ -4,14 +4,14 @@ from urllib import urlencode
 from django.shortcuts import _get_queryset, render_to_response as rtr
 #from helpers.middleware.thread import get_request
 from django.template.context import RequestContext
-from decorator import decorator
-from functools import partial
+#from decorator import decorator
+from functools import partial, wraps
 
 PARAM_PREFIX = 'f_' #I consider this an improvement over the django version
 
-def decorator_factory(decfac): # partial is functools.partial
-    "decorator_factory(decfac) returns a one-parameter family of decorators"
-    return partial(lambda df, param: decorator(partial(df, param)), decfac)
+#def decorator_factory(decfac): # partial is functools.partial
+#    "decorator_factory(decfac) returns a one-parameter family of decorators"
+#    return partial(lambda df, param: decorator(partial(df, param)), decfac)
 
 
 def redirect(*args, **kwargs):
@@ -60,21 +60,30 @@ def direct_to_template(request, template, extra_context=None, mimetype=None, **k
             dictionary[key] = value
     return render_to_response(request, template, dictionary, mimetype=mimetype)
 
-@decorator_factory
-def login_required(func, request, *args, **kw):
-    if not request.user.is_authenticated():
-        request.flash.neutral = "You need to login or create a new user to participate"
-        return redirect('main.views.signin', qs={'next': request.get_full_path()})
-    return super(login_required, self)._dec(request, *args, **kw)
+#Uncomment and fix if the alternative breaks gavs crazy introspection
+#@decorator_factory
+#def render_to(template, func, request, *args, **kw):
+#    output = func(request, *args, **kw)
+#    if isinstance(output, (list, tuple)):
+#        return render_to_response(request, output[1], output[0])
+#    elif isinstance(output, dict):
+#        return render_to_response(request, template, output)
+#    return output
 
-@decorator_factory
-def render_to(template, func, request, *args, **kw):
-    output = func(request, *args, **kw)
-    if isinstance(output, (list, tuple)):
-        return render_to_response(request, output[1], output[0])
-    elif isinstance(output, dict):
-        return render_to_response(request, template, output)
-    return output
+def render_to(func):
+    """
+    Decorator for automatically calling render to response on a view function. The view 
+    simply needs to return a context (dictionary) to pass to the template. 
+    """
+    @wraps(func)
+    def wrapper(template, func, request, *args, **kw):
+        output = func(request, *args, **kw)
+        if isinstance(output, (list, tuple)):
+            return render_to_response(request, output[1], output[0])
+        elif isinstance(output, dict):
+            return render_to_response(request, template, output)
+        return output
+    return wrapper
 
 def render_to_response(request, template, dictionary=None, no_debug=False, cookies=None, **kwargs):
     """

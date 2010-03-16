@@ -27,8 +27,5 @@ from django.db.models.aggregates import Count
 from tablejax import ajax_table_page
 from utilities import direct_to_template, post_data, render_to_response, redirect, redirect_to_referrer, render_to
 
-
-
-
 from django.contrib.auth.decorators import login_required
 from utilities import render_to_response as r2r
