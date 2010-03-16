@@ -90,7 +90,7 @@ def _boolean_icon(field_val):
     return mark_safe(u'<img src="%simg/admin/icon-%s.gif" alt="%s" />' % (settings.ADMIN_MEDIA_PREFIX, BOOLEAN_MAPPING[field_val], field_val))
 
 #http://www.davidcramer.net/code/429/scaling-your-frontend-far-futures-headers-and-template-tags.html
-def mediaurl(context, value, base_url=None):
+def mediaurl(value, base_url=None):
     base_url = base_url if base_url is not None else settings.MEDIA_URL
     fname = os.path.abspath(os.path.join(settings.MEDIA_ROOT, value))
     if not fname.startswith(settings.MEDIA_ROOT):
