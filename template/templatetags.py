@@ -6,12 +6,11 @@ from django.db.models.fields import FieldDoesNotExist
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.text import capfirst
-from django.utils.translation import get_date_formats
+from django.utils import dateformat
 from django.conf import settings
 import os
 
 EMPTY_CHANGELIST_VALUE = '(None)'
-date_format, datetime_format, time_format = get_date_formats()
 
 #:TODO: REFACTOR THIS, from 66:105 was clipped in from django admin.
 def display_attribute(obj, attribute, max_length=None, if_trunc="...", if_none="No %(attribute)s", if_date=None):
@@ -51,11 +50,11 @@ def general_formatter(value, cast=None, **kwargs):
     if isinstance(value, (datetime.datetime, datetime.time, datetime.date)):
         if value:
             if isinstance(value, datetime.datetime):
-                result_repr = capfirst(date_format.format(value, datetime_format))
+                result_repr = capfirst(dateformat.format(value, settings.DATE_FORMAT))
             elif isinstance(value, datetime.time):
-                result_repr = capfirst(date_format.time_format(value, time_format))
+                result_repr = capfirst(dateformat.time_format(value, settings.TIME_FORMAT))
             else:
-                result_repr = capfirst(date_format.format(value, date_format))
+                result_repr = capfirst(dateformat.format(value, settings.DATE_FORMAT))
         else:
             result_repr = EMPTY_CHANGELIST_VALUE
     elif isinstance(value, models.Model):
