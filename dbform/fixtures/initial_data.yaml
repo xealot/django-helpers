@@ -1,0 +1,15 @@
+- fields: {name: Small Text}
+  model: dbform.fieldtype
+  pk: 1
+- fields: {name: Choice (Single)}
+  model: dbform.fieldtype
+  pk: 2
+- fields: {name: DB Entity}
+  model: dbform.fieldtype
+  pk: 3
+- fields: {name: Large Text}
+  model: dbform.fieldtype
+  pk: 4
+- fields: {name: Boolean (True/False)}
+  model: dbform.fieldtype
+  pk: 5
