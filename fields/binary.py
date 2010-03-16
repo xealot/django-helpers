@@ -16,7 +16,7 @@ class BinaryField(Field):
             return value
         if hasattr(value, 'read'):
             return buffer(value.read())
-        return buffer(value)
+        return None
 
 
 class BlobField(Field):
@@ -31,7 +31,7 @@ class BlobField(Field):
             return value
         if hasattr(value, 'read'):
             return buffer(value.read())
-        return buffer(value)
+        return None
 
 
 class InlineImageField(BlobField):
