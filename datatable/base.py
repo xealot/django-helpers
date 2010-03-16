@@ -3,9 +3,7 @@ from django.forms.forms import pretty_name
 from django.utils.safestring import SafeUnicode
 from django.template import defaultfilters
 from helpers.templates import display_attribute
-from helpers.utilities import get_query_string
 from django.forms.models import fields_for_model
-
 
 class DataTable(object):
     WIDGET_COL = u'<th class="{sorter:false}">' #width="1", can't nowrap the columns below the header for widgets
@@ -16,6 +14,7 @@ class DataTable(object):
         self.wrapper = wrapper
         self.classes = classes
         self.last_value = None
+        self.context = {} #Move to TemplateDataTable?
 
     def flush(self):
         return SafeUnicode(''.join(self.output))
@@ -29,11 +28,10 @@ class DataTable(object):
     def close_wrapper(self, **kwargs):
         self.writer(u'</table>')
 
-    def render(self, queryset, fields=None, group=None, filter=None, row_filter=None, add_sort=False, stop_at=None, header=True, footer=False, listfield_callback=None):
+    def render(self, queryset, fields=None, group=None, filter=None, add_sort=False, stop_at=None, header=True, footer=False, listfield_callback=None, row_callback=lambda obj: u'<tr>'):
         self.fields = fields
         self.group = group
         self.filter = filter
-        self.row_filter = row_filter
         self.add_sort = add_sort
         self.header = header
         self.footer = footer
@@ -44,18 +42,8 @@ class DataTable(object):
         
         self.stop_at = int(stop_at) if stop_at is not None else None
         self.row = 0
-    
-        if fields is None:
-            fields = fields_for_model(queryset.model).keys()
-    
-        #Turn all columns into a list of (field, name)
-        #:TODO: can fields exist as a dict instead of a list of two-tuples?
-        self.columns = []
-        for f in fields:
-            if isinstance(f, tuple):
-                self.columns.append(f)
-            else:
-                self.columns.append((f,f)) #Synthesize tuple
+        
+        self.columns = DataTable.expand_fields(queryset, fields)
         
         #Table Header
         if self.should_render_header():
@@ -72,11 +60,7 @@ class DataTable(object):
                 if self.should_render_group(obj):
                     self.render_group(obj, self.last_value)
                 
-                #Custom Row handler
-                if row_filter is not None and hasattr(self.caller, row_filter):
-                    self.writer(getattr(caller, row_filter(obj)))
-                else:
-                    self.writer(u'<tr>')
+                self.writer(row_callback(obj))
     
                 #Render each column
                 column_index = 1
@@ -86,23 +70,20 @@ class DataTable(object):
                 self.writer(u'</tr>')
                 
                 #Stop for stop_at
-                if stop_at and row >= stop_at:
+                if stop_at and self.row >= stop_at:
                     break
         else:
-            self.writer(u'<tr><td colspan="', len(columns), u'">There are no entries</td></tr>')
+            self.writer(u'<tr><td colspan="', len(self.columns), u'">There are no entries</td></tr>')
         self.writer(u'</tbody>')
 
         if self.should_render_footer():
-            self.render_footer(context, columns)
+            self.render_footer()
 
         if self.wrapper:
             self.close_wrapper()
     
     def should_render_header(self):
         return self.header
-
-    def should_render_footer(self):
-        return self.footer
 
     def render_header(self, field, label):
         heading = pretty_name(label) if label is not None else ''
@@ -118,43 +99,11 @@ class DataTable(object):
             self.render_header(field, label)
         self.writer(u'</tr></thead>')
     
-    def render_footer(self, columns):
-        #Can I do this in the main function to start with, or is context more important
-        c = context.kwargs
-        qs = c['request'].GET
-        params = context.get('parameters', None)
-        params['colspan'] = len(columns)
-        params['qs_last'] = get_query_string(qs, {'page': -1})
-        params['qs_first'] = get_query_string(qs, {'page': 1})
-        params['qs_next'] = get_query_string(qs, {'page': params['next_page']})
-        params['qs_prev'] = get_query_string(qs, {'page': params['prev_page']})
-        params['qs_limit_25'] = get_query_string(qs, {'limit': 25})
-        params['qs_limit_50'] = get_query_string(qs, {'limit': 50})
-        params['qs_limit_100'] = get_query_string(qs, {'limit': 100})
-        self.writer(u"""
-        <tfoot id="ajaxPager">
-            <tr class="frow pager">
-                <td colspan="%(colspan)s">
-                    <div style="width: 33%%; float:left;">
-                        Records: <span id="ajaxRecordFrom">%(start)s</span> to <span id="ajaxRecordTo">%(end)s</span> of <span id="ajaxRecords">%(query_size)s</span>
-                    </div>
-                    <div style="width: 33%%; float:left; text-align: center;">
-                        <a href="%(qs_first)s" rel="history" class="table_first">First</a>
-                        <a href="%(qs_prev)s" rel="history" class="table_prev">Prev</a>
-                        Page <input type="text" style="width: 20px;" id="ajaxPageNo" value="%(page)s"/> of <span id="ajaxPages">%(pages)s</span>  
-                        <a href="%(qs_next)s" rel="history" class="table_next">Next</a>
-                        <a href="%(qs_last)s" rel="history" class="table_last">Last</a>
-                    </div>
-                    <div style="width: 33%%; float:left; text-align: right;">
-                        Show 
-                        <a href="%(qs_limit_25)s" rel="history" class="ajaxChangeLimit">25</a>/
-                        <a href="%(qs_limit_50)s" rel="history" class="ajaxChangeLimit">50</a>/
-                        <a href="%(qs_limit_100)s" rel="history" class="ajaxChangeLimit">100</a>
-                        Records
-                    </div>
-                </td>
-            </tr>
-        </tfoot>""" % params)
+    def should_render_footer(self):
+        return self.footer
+
+    def render_footer(self):
+        pass
     
     def should_render_group(self, obj):
         if not self.group:
@@ -190,9 +139,9 @@ class DataTable(object):
         #listfield callback handling
         if self.listfield_callback:
             if key in self.listfield_callback:
-                return self.listfield_callback[key](key, obj)
+                return self.listfield_callback[key](key, obj, self.context)
             if column_index in self.listfield_callback:
-                return self.listfield_callback[column_index](key, obj)
+                return self.listfield_callback[column_index](key, obj, self.context)
         
         #:TODO: depcreate:: DO NOT FILTER this through ANY function 
         if filter is False:
@@ -208,3 +157,19 @@ class DataTable(object):
         self.writer(u'<td>')
         self.writer(self.get_column_value(obj, key, label, column_index))
         self.writer(u'</td>')
+    
+    @staticmethod
+    def expand_fields(queryset, fields=None):
+        if fields is None:
+            fields = fields_for_model(queryset.model).keys()
+    
+        #Turn all columns into a list of (field, name)
+        #:TODO: can fields exist as a dict instead of a list of two-tuples?
+        columns = []
+        for f in fields:
+            if isinstance(f, tuple):
+                columns.append(f)
+            else:
+                columns.append((f,f)) #Synthesize tuple
+        return columns
+        
