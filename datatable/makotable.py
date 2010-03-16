@@ -115,3 +115,20 @@ class DataTableMako(DataTable):
             </tr>
         </tfoot>""" % params)
     
+def render_vertical(data, fields=None):
+    columns, output = [], []
+    if not isinstance(data, dict):
+        data = data.__dict__
+    if fields is None:
+        fields = data.keys()
+    for f in fields:
+        if isinstance(f, tuple):
+            #(key, verbose)
+            columns.append(f)
+        else:
+            columns.append((f,f))
+    
+    output.append(u'<table class="small zebra">')
+    for f in fields:
+        output.append(u'<tr><th>%s:</th><td>%s</td></tr>' % (f, data[f]))
+    output.append(u'</table>')
