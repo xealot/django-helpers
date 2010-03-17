@@ -3,7 +3,7 @@ from django.forms.forms import pretty_name
 from django.utils.safestring import SafeUnicode
 from django.template import defaultfilters
 from django.forms.models import fields_for_model
-from helpers.dh.template.templatetags import general_formatter
+from ..template.templatetags import general_formatter
 
 class DataTable(object):
     WIDGET_COL = u'<th class="{sorter:false}">' #width="1", can't nowrap the columns below the header for widgets
