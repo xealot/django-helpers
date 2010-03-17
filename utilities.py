@@ -1,8 +1,7 @@
+from urllib import urlencode
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
-from urllib import urlencode
 from django.shortcuts import _get_queryset, render_to_response as rtr
-#from helpers.middleware.thread import get_request
 from django.template.context import RequestContext
 from decorator import decorator
 from functools import partial
