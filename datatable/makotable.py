@@ -1,22 +1,30 @@
 from datetime import date, datetime
 from django.forms.forms import pretty_name
 from django.forms.models import fields_for_model
-from django.utils.safestring import SafeUnicode
+from django.utils.safestring import SafeUnicode, mark_safe
 from mako import runtime
 from base import DataTable
 from functools import partial
 
 from ..utilities import get_query_string
 
-def table(context, classes=(), record_url=None, instance=None, **kwargs):
+def table(context, fields=(), classes=(), record_url=None, instance=None, make_selectable=False, listfield_callback=None, **kwargs):
     if not classes:
         classes = ['zebra', 'records', 'paging']
+    if fields is runtime.UNDEFINED:
+        fields = ()
     if record_url is not None:
         classes.append(u"{record_url: '%s'}" % record_url)
+    if make_selectable is True:
+        classes.append(u'selectable')
+        fields = list(fields)
+        fields.insert(0, ('checkbox', None))
+        listfield_callback = listfield_callback or {}
+        listfield_callback['checkbox'] = lambda attr, obj, context: '<input type="checkbox" name="selection" value="%s" />' % obj.pk
     # id="pageTable" for ajax
     if not instance:
         instance = DataTableMako(classes=classes)
-    instance.render(context, **kwargs)
+    instance.render(context, fields=fields, listfield_callback=listfield_callback, **kwargs)
     return instance.flush()
 
 
