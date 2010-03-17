@@ -46,37 +46,35 @@ def general_formatter(value, cast=None, **kwargs):
     """
     Intelligently format typed data
     """
+    if value is None:
+        if 'null' in kwargs:
+            value = kwargs.get('null', EMPTY_CHANGELIST_VALUE)  % {'attribute': kwargs.get('attribute', '')}
+        else:
+            value = EMPTY_CHANGELIST_VALUE
     if cast is not None:
         value = cast(value)
+
     if isinstance(value, (datetime.datetime, datetime.time, datetime.date)):
-        if value:
-            if isinstance(value, datetime.datetime):
-                result_repr = capfirst(dateformat.format(value, settings.DATE_FORMAT))
-            elif isinstance(value, datetime.time):
-                result_repr = capfirst(dateformat.time_format(value, settings.TIME_FORMAT))
-            else:
-                result_repr = capfirst(dateformat.format(value, settings.DATE_FORMAT))
+        if isinstance(value, datetime.datetime):
+            result_repr = capfirst(dateformat.format(value, settings.DATE_FORMAT))
+        elif isinstance(value, datetime.time):
+            result_repr = capfirst(dateformat.time_format(value, settings.TIME_FORMAT))
         else:
-            result_repr = EMPTY_CHANGELIST_VALUE
+            result_repr = capfirst(dateformat.format(value, settings.DATE_FORMAT))
     elif isinstance(value, models.Model):
         result_repr = unicode(value)
     elif isinstance(value, bool):
         result_repr = _boolean_icon(value)
-    elif isinstance(object, (float, Decimal)):
-        if value is not None:
-            result_repr = ('%%.%sf' % kwargs.get('places', 2)) % value
-        else:
-            result_repr = EMPTY_CHANGELIST_VALUE
+    elif isinstance(value, (float, Decimal)):
+        result_repr = ('%%.%sf' % kwargs.get('places', 2)) % value
     elif 'map' in kwargs:
         result_repr = kwargs['map'].get(value, EMPTY_CHANGELIST_VALUE)
     else:
         result_repr = value
     
-    if 'null' in kwargs and result_repr is None:
-        result_repr = kwargs.get('null', EMPTY_CHANGELIST_VALUE)  % {'attribute': kwargs.get('attribute', '')}
     if 'empty' in kwargs and result_repr == '':
-        #pretty_name(if_none % {'attribute': attribute})
         result_repr = kwargs.get('empty', EMPTY_CHANGELIST_VALUE) % {'attribute': kwargs.get('attribute', '')} 
+    
     if kwargs.get('max_length', False):
         result_repr = escape(result_repr) #This turns INT into UNICODE, necessary for max_len
         if len(result_repr) > kwargs['max_length']:
