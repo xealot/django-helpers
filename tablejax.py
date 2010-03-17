@@ -1,18 +1,23 @@
 #Excessive Space Removal RE
+import re
 from django.http import HttpResponse
 from django.db.models import Q
-import re
+from django.template import loader, Context
+from django.template.context import RequestContext
 
 tab_return_re = re.compile('[\t\n\r]+| {2,}', re.MULTILINE)
 
 def render_buildtable(request, queryset, template, fields, default_sort=None, search_fields=None, **kwargs):
-    from helpers.mako_integration import get_request_context, mylookup
-    default_context = {'pager': True, 'sorting': True, 'group_by': None, 'selectable': False}
-    default_context.update(kwargs)
-    if default_context['selectable']:
+    #from helpers.mako_integration import get_request_context, mylookup
+    context = RequestContext(request, {'pager': True, 'sorting': True, 'group_by': None, 'selectable': False})
+    context.update(kwargs)
+    if context['selectable']:
         fields.append('cap')
-    template = mylookup.get_template(template)
-    table_body = template.get_def("buildtable").render_unicode(queryset, fields=fields, **get_request_context(request, default_context))
+    context_dict = {}
+    for d in context.dicts:
+        context_dict.update(d)
+    template = loader.get_template(template)
+    table_body = template.template.get_def("buildtable").render_unicode(queryset, fields=fields, **context_dict)
     table_body = tab_return_re.sub(' ', table_body)
     return table_body
 
@@ -20,7 +25,7 @@ def ajax_table_page(request, queryset, default_sort=None, search_fields=None, **
     from math import ceil
     from django.utils import simplejson as json
     from django.db.models.sql.query import get_order_dir
-    from helpers.mako_integration import get_request_context, mylookup
+    #from helpers.mako_integration import get_request_context, mylookup
 
     pageVars = request.GET.copy()
     qs = queryset    
