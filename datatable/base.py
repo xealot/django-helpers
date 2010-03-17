@@ -2,8 +2,8 @@ from datetime import datetime, date
 from django.forms.forms import pretty_name
 from django.utils.safestring import SafeUnicode
 from django.template import defaultfilters
-from helpers.templates import display_attribute
 from django.forms.models import fields_for_model
+from helpers.dh.template.templatetags import general_formatter
 
 class DataTable(object):
     WIDGET_COL = u'<th class="{sorter:false}">' #width="1", can't nowrap the columns below the header for widgets
@@ -135,23 +135,26 @@ class DataTable(object):
         self.writer(u'</td></tr>')
 
     def get_column_value(self, obj, key, label, column_index):
-        #:TODO: this function could use a lot of optimization in the form of returning early and saving checks to variables.
-        #listfield callback handling
+        value = None
+        #Callback fetching
         if self.listfield_callback:
             if key in self.listfield_callback:
-                return self.listfield_callback[key](key, obj, self.context)
+                value = self.listfield_callback[key](key, obj, self.context)
             if column_index in self.listfield_callback:
-                return self.listfield_callback[column_index](key, obj, self.context)
+                value = self.listfield_callback[column_index](key, obj, self.context)
         
-        #:TODO: depcreate:: DO NOT FILTER this through ANY function 
-        if filter is False:
-            val = getattr(obj, key)
-            if callable(val):
-                return val()
-            return val
-    
-        #Default
-        return display_attribute({}, obj, key, max_length=65, if_none="--")
+        #Standard fetching
+        if value is None:
+            value = getattr(obj, key)
+            if callable(value):
+                value = value()
+
+        #Now Filter
+        if self.filter is None: #Standard sanity filter
+            return general_formatter(value, max_length=65, if_none="--")
+        elif callable(self.filter):
+            return self.filter(obj, key)
+        return value
 
     def render_column(self, obj, key, label, column_index):
         self.writer(u'<td>')

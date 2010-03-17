@@ -4,6 +4,7 @@ from django.forms.models import fields_for_model
 from django.utils.safestring import SafeUnicode
 from mako import runtime
 from base import DataTable
+from functools import partial
 
 from ..utilities import get_query_string
 
@@ -33,8 +34,14 @@ class DataTableMako(DataTable):
 
         #Custom Row handler
         if row_filter is not None and hasattr(self.caller, row_filter):
-            row_callback = getattr(self.caller, row_filter)
+            row_callback = partial(self.capture, getattr(self.caller, row_filter))
             #self.writer(getattr(self.caller, row_filter(obj)))
+
+        #CELL FILTERS ARE RETARDED.... IGNORE THEM FROM MAKO
+        #Custom cell filter
+        #if filter is not None and hasattr(self.caller, filter):
+            #filter = partial(self.capture, getattr(self.caller, filter))# lambda obj, key: self.capture(, obj, key)
+            #filter = getattr(self.caller, filter)
 
         #:TODO: this should be cache as to not re-run in the super class
         #Create listfield callback out of mako specfic variables
@@ -43,12 +50,13 @@ class DataTableMako(DataTable):
             #FIRST COLUMN SPECIAL CASE ***DEPRECATED***
             if (key, label) == columns[0] and hasattr(self.caller, 'td__first'): #First column override :TODO: make this more generic
                 #:TODO: I wish I didn't need to wrap this in a lambda, backward compat issue; also I don't know how passing context to a mako function works.
-                listfield_callback[1] = lambda attr, obj, context: getattr(self.caller, 'td__first')(attr, obj)
+                listfield_callback[1] = partial(self.capture, lambda attr, obj, context: getattr(self.caller, 'td__first')(attr, obj))
             #:TODO: can we deprecate this too?
             if hasattr(self.caller, 'td_%s' % key):
                 #:TODO: I wish I didn't need to wrap this in a lambda, backward compat issue; also I don't know how passing context to a mako function works.
-                listfield_callback[key] = lambda attr, obj, context: getattr(self.caller, 'td_%s' % attr)(obj)
-        
+                #listfield_callback[key] = lambda attr, obj, context: getattr(self.caller, 'td_%s' % attr)(obj)
+                listfield_callback[key] = partial(self.capture, lambda attr, obj, context: getattr(self.caller, 'td_%s' % attr)(obj))
+
         try:
             super(DataTableMako, self).render(queryset, fields, group, filter, add_sort, stop_at, header, footer, listfield_callback, row_callback, **kwargs)
         finally:
@@ -69,13 +77,6 @@ class DataTableMako(DataTable):
             self.writer(self.capture(getattr(self.caller, 'th_%s' % label)))
         else:
             super(DataTableMako, self).render_header(field, label)
-
-    def get_column_value(self, obj, key, label, column_index):
-        #:TODO: is this even used? Deprecate... :: Filter this through specified function
-        if self.filter is not None and hasattr(self.caller, self.filter):
-            return self.capture(getattr(self.caller, self.filter), obj, key)
-        
-        return super(DataTableMako, self).get_column_value(obj, key, label, column_index)
 
     def render_footer(self):
         #Can I do this in the main function to start with, or is context more important
