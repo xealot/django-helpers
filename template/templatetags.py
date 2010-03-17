@@ -76,7 +76,6 @@ def general_formatter(value, cast=None, **kwargs):
         result_repr = kwargs.get('empty', EMPTY_CHANGELIST_VALUE) % {'attribute': kwargs.get('attribute', '')} 
     
     if kwargs.get('max_length', False):
-        result_repr = escape(result_repr) #This turns INT into UNICODE, necessary for max_len
         if len(result_repr) > kwargs['max_length']:
             result_repr = mark_safe(u'<abbr title="%s">%s</abbr>' % (result_repr, 
                                                           result_repr[:kwargs['max_length']-len(kwargs.get('truncate', ''))] + kwargs.get('truncate', '')))
