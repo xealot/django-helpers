@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from django.forms.forms import pretty_name
-from django.utils.safestring import SafeUnicode
+from django.utils.safestring import SafeUnicode, mark_safe
 from django.template import defaultfilters
 from django.forms.models import fields_for_model
 from ..template.templatetags import general_formatter
@@ -139,10 +139,10 @@ class DataTable(object):
         #Callback fetching
         if self.listfield_callback:
             if key in self.listfield_callback:
-                value = self.listfield_callback[key](key, obj, self.context)
+                value = mark_safe(self.listfield_callback[key](key, obj, self.context))
             if column_index in self.listfield_callback:
-                value = self.listfield_callback[column_index](key, obj, self.context)
-        
+                value = mark_safe(self.listfield_callback[column_index](key, obj, self.context))
+
         #Standard fetching
         if value is None:
             value = getattr(obj, key)
