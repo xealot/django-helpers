@@ -1,9 +1,8 @@
-#Try 3.0
 from django.db import models
-from helpers.dh.utilities import slugify
-from helpers.dbfields import JSONField
-from helpers.dbform.utilities import dbform_factory
-from helpers.dh.fields.binary import BlobField
+from utilities import dbform_factory
+from ..utilities import slugify
+from ..fields.json import JSONField
+from ..fields.binary import BlobField
 
 
 class FieldType(models.Model):
