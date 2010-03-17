@@ -1,6 +1,6 @@
 #Try 3.0
 from django.db import models
-from django.template.defaultfilters import slugify
+from helpers.dh.utilities import slugify
 from helpers.dbfields import JSONField
 from helpers.dbform.utilities import dbform_factory
 from helpers.dh.fields.binary import BlobField

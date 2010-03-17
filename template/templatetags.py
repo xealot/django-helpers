@@ -41,6 +41,7 @@ def display_attribute(obj, attribute, max_length=None, if_trunc="...", if_none="
 
     return general_formatter(value, **format_kw)
 
+#:TODO: give this a real signature instead of just kwargs, jesus
 def general_formatter(value, cast=None, **kwargs):
     """
     Intelligently format typed data
