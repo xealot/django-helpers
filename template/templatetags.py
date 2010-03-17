@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.db import models
 from django.db.models.fields import FieldDoesNotExist
 from django.utils.html import escape
-from django.utils.safestring import mark_safe
+from django.utils.safestring import mark_safe, SafeUnicode, SafeString
 from django.utils.text import capfirst
 from django.utils import dateformat
 from django.conf import settings
@@ -61,24 +61,24 @@ def general_formatter(value, cast=None, **kwargs):
             result_repr = capfirst(dateformat.time_format(value, settings.TIME_FORMAT))
         else:
             result_repr = capfirst(dateformat.format(value, settings.DATE_FORMAT))
-    elif isinstance(value, models.Model):
-        result_repr = unicode(value)
     elif isinstance(value, bool):
         result_repr = _boolean_icon(value)
     elif isinstance(value, (float, Decimal)):
-        result_repr = ('%%.%sf' % kwargs.get('places', 2)) % value
+        result_repr = (u'%%.%sf' % kwargs.get('places', 2)) % value
     elif 'map' in kwargs:
         result_repr = kwargs['map'].get(value, EMPTY_CHANGELIST_VALUE)
-    else:
+    elif isinstance(value, (SafeUnicode, SafeString)):
         result_repr = value
+    else:
+        result_repr = unicode(value)
     
     if 'empty' in kwargs and result_repr == '':
         result_repr = kwargs.get('empty', EMPTY_CHANGELIST_VALUE) % {'attribute': kwargs.get('attribute', '')} 
     
-    if kwargs.get('max_length', False):
-        if len(result_repr) > kwargs['max_length']:
-            result_repr = mark_safe(u'<abbr title="%s">%s</abbr>' % (result_repr, 
-                                                          result_repr[:kwargs['max_length']-len(kwargs.get('truncate', ''))] + kwargs.get('truncate', '')))
+    if not isinstance(result_repr, (SafeUnicode, SafeString)) and kwargs.get('max_length', False) and len(result_repr) > kwargs['max_length']:
+        print 'here', value, type(value)
+        result_repr = mark_safe(u'<abbr title="%s">%s</abbr>' % (result_repr, 
+                                                       result_repr[:kwargs['max_length']-len(kwargs.get('truncate', ''))] + kwargs.get('truncate', '')))
     return result_repr
 
 #:TODO: make this image a settings entry, default to the admin version
