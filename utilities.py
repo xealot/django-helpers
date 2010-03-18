@@ -93,8 +93,8 @@ def render_to_response(request, template, dictionary=None, no_debug=False, cooki
         for cookie in cookies:
             response.set_cookie(**cookie)
     
-    if no_debug:
-        response._no_debug = True
+    if no_debug is True:
+        response._debug = False
     return response
 
 def split_param_prefixes(params, prefix=PARAM_PREFIX):
