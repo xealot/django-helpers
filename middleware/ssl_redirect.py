@@ -22,12 +22,17 @@ SSL = 'SSL'
 #SSL_FORCE_RETURN = True
 
 class SSLRedirectMiddleware(object):
-    def __init__(self):
-        if getattr(settings, 'DEBUG', False) is True or getattr(settings, 'ENABLE_SSL', False) is False:
-            raise MiddlewareNotUsed
+    #Doesn't work because can't pop SSL out of kwargs
+    #def __init__(self):
+    #    if getattr(settings, 'DEBUG', False) is True or getattr(settings, 'ENABLE_SSL', False) is False:
+    #        raise MiddlewareNotUsed
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         secure = view_kwargs.pop(SSL, None)
+        #I wish I could put this in init, but django bitches when you don't remove the kwargs from the URLconf
+        if getattr(settings, 'DEBUG', False) is True or getattr(settings, 'ENABLE_SSL', False) is False:
+            return None
+        
         if secure is None: #If SSL is None, do NOT redirect
             return None
 
