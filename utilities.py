@@ -9,6 +9,13 @@ import re
 
 PARAM_PREFIX = 'f_' #I consider this an improvement over the django version
 
+#This one liner is to alleviate the need to but a form definition in a branching IF
+post_data = lambda request: request.POST if request.method == 'POST' else None
+pd = lambda request: request.POST if request.method == 'POST' else None
+pf = lambda request: request.FILES if request.method == 'POST' else None
+#Python 2.6 only... BAH
+pfd = lambda request: (request.POST, request.FILES) if request.method == 'POST' else (None, None) 
+
 def decorator_factory(decfac): # partial is functools.partial
     "decorator_factory(decfac) returns a one-parameter family of decorators"
     return partial(lambda df, param: decorator(partial(df, param)), decfac)
@@ -51,9 +58,6 @@ def redirect_to_referrer(request, fallback=None, *args, **kwargs):
     if fallback:
         return redirect(fallback)
     return HttpResponseRedirect("/")
-
-def post_data(request):
-    return request.method == "POST" and request.POST or None
 
 def get_object_or_none(klass, *args, **kwargs):
     queryset = _get_queryset(klass)
