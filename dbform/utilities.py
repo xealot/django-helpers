@@ -11,6 +11,7 @@ TYPE_CHOICE = 2
 TYPE_DB_ENTITY = 3
 TYPE_LARGE_TEXT = 4
 TYPE_BOOL = 5
+TYPE_IMAGE = 6
 
 COERCE_BOOLEAN_VALUES = ('no', 'false', '0', '')
 
@@ -36,6 +37,8 @@ def dbform_factory(formdef, querysets=None):
             base_fields[field.key] = forms.ModelChoiceField(qs, **default_args)
         if field.type.pk == TYPE_BOOL:
             base_fields[field.key] = forms.BooleanField(widget=forms.RadioSelect(choices=((True, 'Yes'),(False, 'No'))), **default_args)
+        if field.type.pk == TYPE_IMAGE:
+            base_fields[field.key] = forms.ImageField(**default_args)
 
         #Apply HTML attributes to widget.attrs
         final_attrs = {}

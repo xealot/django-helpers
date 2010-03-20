@@ -1,5 +1,4 @@
 from django.db import models
-from utilities import dbform_factory
 from ..utilities import slugify
 from ..fields.json import JSONField
 from ..fields.binary import BlobField
@@ -18,6 +17,7 @@ class FormDef(models.Model):
     failure_msg = models.CharField(max_length=250, null=True, blank=True, verbose_name="Failure Message")
 
     def create_form(self, querysets=None):
+        from utilities import dbform_factory #Avoid circular import
         return dbform_factory(self, querysets)
 
     def __unicode__(self):

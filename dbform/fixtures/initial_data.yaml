@@ -13,3 +13,6 @@
 - fields: {name: Boolean (True/False)}
   model: dbform.fieldtype
   pk: 5
+- fields: {name: Image}
+  model: dbform.fieldtype
+  pk: 6
