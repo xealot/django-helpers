@@ -6,7 +6,7 @@ from django.forms.models import fields_for_model
 from ..template.templatetags import general_formatter
 
 class DataTable(object):
-    WIDGET_COL = u'<th class="{sorter:false}">' #width="1", can't nowrap the columns below the header for widgets
+    WIDGET_COL = u'<th class="{sorter:false}" width="1">'
     REGULAR_COL = u'<th>'
     
     def __init__(self, wrapper=True, classes=()):
@@ -28,7 +28,7 @@ class DataTable(object):
     def close_wrapper(self, **kwargs):
         self.writer(u'</table>')
 
-    def render(self, queryset, fields=None, group=None, filter=None, add_sort=False, stop_at=None, header=True, footer=False, listfield_callback=None, row_callback=lambda obj: u'<tr>'):
+    def render(self, queryset, fields=(), exclude=(), group=None, filter=None, add_sort=False, stop_at=None, header=True, footer=False, listfield_callback=None, row_callback=lambda obj: u'<tr>'):
         self.fields = fields
         self.group = group
         self.filter = filter
@@ -42,8 +42,8 @@ class DataTable(object):
         
         self.stop_at = int(stop_at) if stop_at is not None else None
         self.row = 0
-        
-        self.columns = DataTable.expand_fields(queryset, fields)
+
+        self.columns = DataTable.expand_fields(queryset, fields, exclude)
         
         #Table Header
         if self.should_render_header():
@@ -162,17 +162,216 @@ class DataTable(object):
         self.writer(u'</td>')
     
     @staticmethod
-    def expand_fields(queryset, fields=None):
-        if fields is None:
+    def expand_fields(queryset, fields=(), exclude=()):
+        #:TODO: fields_for_model can handle including and excluding, why repeat it here?
+        if not fields:
             fields = fields_for_model(queryset.model).keys()
-    
         #Turn all columns into a list of (field, name)
         #:TODO: can fields exist as a dict instead of a list of two-tuples?
         columns = []
         for f in fields:
+            if f in exclude:
+                continue
             if isinstance(f, tuple):
                 columns.append(f)
             else:
                 columns.append((f,f)) #Synthesize tuple
         return columns
+
+
+
+class DataGrid(DataTable):
+    def __init__(self, *args, **kwargs):
+        super(DataGrid, self).__init__(*args, **kwargs)
+        self.footer = True #Contains management form
+        self.group = None
+        self.filter = None
+        self.add_sort = False
+        self.stop_at = None
+
+    def render(self, formset, fields=(), exclude=(), header=True, listfield_callback=None, row_callback=lambda obj: u'<tr>'):
+        self.fields = fields 
+        self.header = header
+        self.listfield_callback = listfield_callback
+
+        if self.wrapper:
+            self.open_wrapper(self.classes)
         
+        self.row = 0
+
+        self.columns = self.expand_fields(formset, fields, exclude)
+
+        #Table Header
+        if self.should_render_header():
+            self.render_headers()
+    
+        #Table Body
+        self.writer(u'<tbody>')
+        if formset.forms:
+            for obj in formset.forms:
+                self.row += 1
+                
+                #Errors
+                if self.should_render_group(obj):
+                    self.render_group(obj, self.last_value)
+                    
+                self.writer(row_callback(obj))
+   
+                #Render each column
+                column_index = 1
+                for key, label in self.columns:
+                    self.render_column(obj, key, label, column_index)
+                    column_index += 1
+                self.writer(u'</tr>')
+                
+        else:
+            self.writer(u'<tr><td colspan="', len(self.columns), u'">There are no entries</td></tr>')
+        self.writer(u'</tbody>')
+
+        if self.should_render_footer():
+            self.render_footer(formset)
+
+        if self.wrapper:
+            self.close_wrapper()
+
+    def render_header(self, field, label):
+        heading = pretty_name(label) if label is not None else ''
+        th = self.REGULAR_COL if field is not 'DELETE' else self.WIDGET_COL
+        self.writer(th, heading, u'</th>')
+
+    def render_footer(self, formset):
+        self.writer(unicode(formset.management_form))
+
+    def render_column(self, obj, key, label, column_index):
+        bf = obj[key]
+        self.writer(u'<td>', u'<div class="inputWrapper %s %s">' % (bf._auto_id(), bf.field.getCssClass()))
+        if column_index == 1:
+            self.writer(*[f.as_widget() for f in obj.hidden_fields()])
+        self.writer(self.get_column_value(obj, key, label, column_index))
+        self.writer(u'</div></td>')
+        
+    def get_column_value(self, obj, key, label, column_index):
+        #:TODO: can we use render field here?
+        bf = obj[key]
+        return bf.as_widget()
+
+    def expand_fields(self, formset, fields=(), exclude=()):
+        if not fields:
+            first_form = formset.forms[0]
+            fields = [(f.name, f.label) for f in first_form.visible_fields()]
+
+        #Turn all columns into a list of (field, name)
+        columns = []
+        for f in fields:
+            if f in exclude:
+                continue
+            if isinstance(f, tuple):
+                columns.append(f)
+            else:
+                columns.append((f,f)) #Synthesize tuple
+        return columns
+
+    def should_render_group(self, obj):
+        if obj.errors:
+            return True
+        return False
+    
+    def render_group(self, obj, value):
+        self.writer(u'<tr class="error_row"><td colspan="', len(self.columns), u'" class="tr_group">')
+        self.writer(u'Please correct the errors in the row below.', obj.non_field_errors())
+        self.writer(u'</td></tr>')
+        
+        self.writer(u'<tr class="error_row">')
+        for field, label in self.columns:
+            bf = obj[field]
+            self.writer(u'<td>', bf.errors, u'</td>')
+        self.writer(u'</tr>')
+        
+
+"""
+<%def name="render_grid(formset, fields=None)">
+    <%
+    #from django.forms.forms import pretty_name
+    first_form = formset.forms[0]
+    vis_fields = first_form.visible_fields()
+    vis_names = [v.name for v in vis_fields]
+    if not fields:
+        fields = [field.name for field in vis_fields]
+    %>
+    % if formset.non_form_errors():
+    <caption class="error">${formset.non_form_errors()}</caption>
+    % endif
+    ##<% import pdb; pdb.set_trace(); %>
+    <thead>
+        <tr>
+            % for field in fields:
+                % if hasattr(caller, 'th_%s' % field): 
+                    ${getattr(caller, 'th_%s' % field)()}
+                % else:
+                    <th>
+                        % if field == fields[0]:
+                            ${formset.management_form}
+                        % endif
+                        ${first_form[field].label}
+                        ##${pretty_name(field)}
+                    </th>
+                % endif
+            %endfor
+        </tr>
+    </thead>
+    <tbody>
+        % for form in formset.forms:
+            <%
+            #bound_fields = [form[field] for field in fields if field in vis_names]
+            %>
+            % if form.errors:
+            <tr class="error_row">
+                <td colspan="${len(fields)}">
+                    Please correct the errors in the row below.
+                    ${form.errors}
+                    ${form.non_field_errors()}
+                </td>
+            </tr>
+            <tr>
+                % for field in fields:
+                    <%
+                    bound_field = field in vis_names and form[field] or None
+                    %>
+                    <td>
+                        % if bound_field:
+                            ${bound_field.errors}
+                        % endif
+                    </td>
+                %endfor
+            </tr>
+            % endif
+            <tr>
+            % for field in fields:
+                <%
+                bound_field = field in vis_names and form[field] or None
+                %>
+                <td>
+                    % if field == fields[0]:
+                        % for hidden in form.hidden_fields():
+                            ${hidden}
+                        % endfor
+                    % endif
+                    % if hasattr(caller, 'td_%s' % field): 
+                        ${getattr(caller, 'td_%s' % field)(form.instance, form)}
+                    % else:
+                        % if bound_field:
+                            <div class="inputWrapper ${bound_field._auto_id()} ${bound_field.field.getCssClass()}">
+                            ##${getattr(obj, bound_field.name)}
+                            ${bound_field.as_widget()}
+                            </div>
+                        % endif
+                    % endif
+                </td>
+            %endfor
+            </tr>
+        % endfor
+    </tbody>
+</%def>
+
+
+"""

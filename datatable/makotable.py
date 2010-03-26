@@ -1,44 +1,55 @@
 from datetime import date, datetime
+from django.core.urlresolvers import reverse
 from django.forms.forms import pretty_name
 from django.forms.models import fields_for_model
 from django.utils.safestring import SafeUnicode, mark_safe
 from mako import runtime
-from base import DataTable
+from base import DataTable, DataGrid
 from functools import partial
 
 from ..utilities import get_query_string
+from ..template.templatetags import display_attribute
 
-def table(context, fields=(), classes=(), record_url=None, instance=None, make_selectable=False, listfield_callback=None, **kwargs):
+def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, **kwargs):
+    listfield_callback = listfield_callback or {}
     if not classes:
         classes = ['zebra', 'records', 'paging']
     if fields is runtime.UNDEFINED:
-        fields = ()
+        fields = DataTableMako.expand_fields(queryset, fields, exclude)
+    fields = list(fields)
     if record_url is not None:
         classes.append(u"{record_url: '%s'}" % record_url)
     if make_selectable is True:
         classes.append(u'selectable')
-        fields = list(fields)
         fields.insert(0, ('checkbox', None))
-        listfield_callback = listfield_callback or {}
         listfield_callback['checkbox'] = lambda attr, obj, context: '<input type="checkbox" name="selection" value="%s" />' % obj.pk
+    if make_editable is not False:
+        listfield_callback[1] = lambda attr, obj, context: '<a href="%s">%s</a>' % (reverse(make_editable, kwargs=obj.__dict__), display_attribute(obj, attr))
     # id="pageTable" for ajax
     if not instance:
         instance = DataTableMako(classes=classes)
-    instance.render(context, fields=fields, listfield_callback=listfield_callback, **kwargs)
+    instance.render(context, queryset, fields=fields, exclude=exclude, listfield_callback=listfield_callback, **kwargs)
     return instance.flush()
 
+def grid(context, formset, fields=(), exclude=(), classes=(), instance=None, **kwargs):
+    if not classes:
+        classes = ['zebra', 'records', 'paging']
+    if instance is None:
+        instance = DataGridMako(classes=classes)
+    instance.render(context, formset, fields=fields, exclude=exclude, **kwargs)
+    return instance.flush()
 
 class DataTableMako(DataTable):
-    def render(self, context, queryset, fields=None, group=None, filter=None, row_filter=None, add_sort=False, stop_at=None, header=True, footer=False, listfield_callback=None, row_callback=lambda obj: u'<tr>', **kwargs):
+    def render(self, context, queryset, fields=(), exclude=(), group=None, filter=None, row_filter=None, add_sort=False, stop_at=None, header=True, footer=False, listfield_callback=None, row_callback=lambda obj: u'<tr>', **kwargs):
         context.caller_stack._push_frame()
         self.context = context
         self.caller = context.get('caller', runtime.UNDEFINED)
         self.capture = context.get('capture', runtime.UNDEFINED)
 
-        if fields is runtime.UNDEFINED:
-            fields = None
-        if listfield_callback is None:
-            listfield_callback = {}
+        #Safing defaults
+        fields = () if fields is runtime.UNDEFINED else fields
+        exclude = () if exclude is runtime.UNDEFINED else exclude
+        listfield_callback = {} if listfield_callback is None else listfield_callback
 
         #Custom Row handler
         if row_filter is not None and hasattr(self.caller, row_filter):
@@ -53,7 +64,7 @@ class DataTableMako(DataTable):
 
         #:TODO: this should be cache as to not re-run in the super class
         #Create listfield callback out of mako specfic variables
-        columns = DataTableMako.expand_fields(queryset, fields)
+        columns = DataTableMako.expand_fields(queryset, fields, exclude)
         for key,label in columns:
             #FIRST COLUMN SPECIAL CASE ***DEPRECATED***
             if (key, label) == columns[0] and hasattr(self.caller, 'td__first'): #First column override :TODO: make this more generic
@@ -66,7 +77,7 @@ class DataTableMako(DataTable):
                 listfield_callback[key] = partial(self.capture, lambda attr, obj, context: getattr(self.caller, 'td_%s' % attr)(obj))
 
         try:
-            super(DataTableMako, self).render(queryset, fields, group, filter, add_sort, stop_at, header, footer, listfield_callback, row_callback, **kwargs)
+            super(DataTableMako, self).render(queryset, fields, exclude, group, filter, add_sort, stop_at, header, footer, listfield_callback, row_callback, **kwargs)
         finally:
             context.caller_stack._pop_frame()
 
@@ -91,11 +102,13 @@ class DataTableMako(DataTable):
         c = self.context.kwargs
         qs = c['request'].GET
         params = self.context.get('parameters', None)
+        if params is None:
+            return
         params['colspan'] = len(self.columns)
         params['qs_last'] = get_query_string(qs, {'page': -1})
         params['qs_first'] = get_query_string(qs, {'page': 1})
-        params['qs_next'] = get_query_string(qs, {'page': params['next_page']})
-        params['qs_prev'] = get_query_string(qs, {'page': params['prev_page']})
+        params['qs_next'] = get_query_string(qs, {'page': params.get('next_page', '')})
+        params['qs_prev'] = get_query_string(qs, {'page': params.get('prev_page', '')})
         params['qs_limit_25'] = get_query_string(qs, {'limit': 25})
         params['qs_limit_50'] = get_query_string(qs, {'limit': 50})
         params['qs_limit_100'] = get_query_string(qs, {'limit': 100})
@@ -123,6 +136,25 @@ class DataTableMako(DataTable):
                 </td>
             </tr>
         </tfoot>""" % params)
+
+
+class DataGridMako(DataGrid):
+    def render(self, context, formset, fields=(), exclude=(), **kwargs):
+        context.caller_stack._push_frame()
+        self.context = context
+        self.caller = context.get('caller', runtime.UNDEFINED)
+        self.capture = context.get('capture', runtime.UNDEFINED)
+
+        try:
+            super(DataGridMako, self).render(formset, fields, exclude, **kwargs)
+        finally:
+            context.caller_stack._pop_frame()
+
+
+
+
+
+
     
 def render_vertical(context, data, fields=None):
     columns, output = [], []
