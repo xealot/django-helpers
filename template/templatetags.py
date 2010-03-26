@@ -15,7 +15,7 @@ EMPTY_CHANGELIST_VALUE = '(None)'
 #:TODO: REFACTOR THIS, from 66:105 was clipped in from django admin.
 def display_attribute(obj, attribute, max_length=None, if_trunc="...", if_none="No %(attribute)s", if_date=None):
     format_kw = {'max_length': max_length, 'truncate': if_trunc, 'null': if_none, 'empty': if_none, 'attribute': attribute}
- 
+
     #output = unicode(value)
     if isinstance(obj, models.Model):
         #We can infer a few special cases if the object is a Model instance.
@@ -38,7 +38,7 @@ def display_attribute(obj, attribute, max_length=None, if_trunc="...", if_none="
         value = obj.get(attribute, None)
     else:
         value = getattr(obj, attribute, None) or None
-
+        
     return general_formatter(value, **format_kw)
 
 #:TODO: give this a real signature instead of just kwargs, jesus
