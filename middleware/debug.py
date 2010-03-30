@@ -7,7 +7,7 @@ from django.core.exceptions import MiddlewareNotUsed
 from functools import wraps
 
 #:TODO: I probably only need one of these, unify implementation to only use DEBUG_FLAG
-DEBUG_FLAG = '__do_debug'
+DEBUG_FLAG = '_do_debug'
 USER_DEBUG_FLAG = '_debug'
 
 def no_debug(func):
@@ -36,6 +36,7 @@ class DebugMiddleware(object):
     def process_request(self, request):
         """ Check IP's and request to see if we should debug. """
         setattr(request, DEBUG_FLAG, False)
+        setattr(request, USER_DEBUG_FLAG, False)
         if not settings.INTERNAL_IPS or request.META.get('REMOTE_ADDR', '') in settings.INTERNAL_IPS:
             setattr(request, DEBUG_FLAG, True)
 
@@ -49,6 +50,9 @@ class DebugMiddleware(object):
             setattr(request, DEBUG_FLAG, bool(getattr(request, USER_DEBUG_FLAG)))
         if USER_DEBUG_FLAG in request.GET:
             setattr(request, DEBUG_FLAG, bool(request.get(USER_DEBUG_FLAG)))
+
+        print request._debug
+        print request._do_debug
 
         if getattr(request, DEBUG_FLAG, False) is False:
             return False
