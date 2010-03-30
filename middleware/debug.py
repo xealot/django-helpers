@@ -51,9 +51,6 @@ class DebugMiddleware(object):
         if USER_DEBUG_FLAG in request.GET:
             setattr(request, DEBUG_FLAG, bool(request.get(USER_DEBUG_FLAG)))
 
-        print request._debug
-        print request._do_debug
-
         if getattr(request, DEBUG_FLAG, False) is False:
             return False
 
