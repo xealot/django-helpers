@@ -97,7 +97,7 @@ def css_tags(media_url='/public'):
     if hasattr(settings, 'DEPLOY_CSS'):
         output = []
         for t in settings.DEPLOY_CSS:
-            output.append('<link rel="stylesheet" href="%s/css/%s" type="text/css" media="screen" />' % (media_url, t))
+            output.append('<link rel="stylesheet" href="%s/%s" type="text/css" media="screen" />' % (media_url, t))
         return '\n'.join(output)
     return ''
 
@@ -105,6 +105,6 @@ def js_tags(media_url='/public'):
     if hasattr(settings, 'DEPLOY_JS'):
         output = []
         for t in settings.DEPLOY_JS:
-            output.append('<script src="%s/js/%s" type="text/javascript"></script>' % (media_url, t))
+            output.append('<script src="%s/%s" type="text/javascript"></script>' % (media_url, t))
         return '\n'.join(output)
     return ''
