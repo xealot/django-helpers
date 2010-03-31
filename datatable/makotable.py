@@ -10,7 +10,7 @@ from functools import partial
 from ..utilities import get_query_string
 from ..template.templatetags import display_attribute
 
-def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, **kwargs):
+def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
     listfield_callback = listfield_callback or {}
     if not classes:
         classes = ['zebra', 'records', 'paging']
@@ -27,7 +27,7 @@ def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None,
         listfield_callback[1] = lambda attr, obj, context: '<a href="%s">%s</a>' % (reverse(make_editable, kwargs=obj.__dict__), display_attribute(obj, attr))
     # id="pageTable" for ajax
     if not instance:
-        instance = DataTableMako(classes=classes)
+        instance = DataTableMako(classes=classes, wrapper=wrapper)
     instance.render(context, queryset, fields=fields, exclude=exclude, listfield_callback=listfield_callback, **kwargs)
     return instance.flush()
 
