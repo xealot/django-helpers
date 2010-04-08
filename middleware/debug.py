@@ -8,7 +8,7 @@ from functools import wraps
 
 #:TODO: I probably only need one of these, unify implementation to only use DEBUG_FLAG
 DEBUG_FLAG = '_do_debug'
-USER_DEBUG_FLAG = '_debug'
+URL_DEBUG_FLAG = 'debug'
 
 def no_debug(func):
     """
@@ -23,12 +23,6 @@ def no_debug(func):
 
 
 class DebugMiddleware(object):
-    """ Does debug output long after the caching stuff has happened.
-
-    This is a middleware to ensure that any page-side caching done by things
-    like CacheMiddleware doesn't stick and mess up our output.
-    
-    """
     def __init__(self):
         if settings.DEBUG is False:
             raise MiddlewareNotUsed
@@ -36,22 +30,22 @@ class DebugMiddleware(object):
     def process_request(self, request):
         """ Check IP's and request to see if we should debug. """
         setattr(request, DEBUG_FLAG, False)
-        setattr(request, USER_DEBUG_FLAG, False)
         if not settings.INTERNAL_IPS or request.META.get('REMOTE_ADDR', '') in settings.INTERNAL_IPS:
+            setattr(request, DEBUG_FLAG, True)
+        if request.is_ajax():
+            setattr(request, DEBUG_FLAG, False)
+        if URL_DEBUG_FLAG in request.GET:
             setattr(request, DEBUG_FLAG, True)
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         if 'debug' in view_kwargs:
-            setattr(request, DEBUG_FLAG, view_kwargs.pop('debug'))
+            setattr(request, DEBUG_FLAG, bool(view_kwargs.pop('debug')))
         return None
 
     def should_debug(self, request, response):
-        if hasattr(request, USER_DEBUG_FLAG):
-            setattr(request, DEBUG_FLAG, bool(getattr(request, USER_DEBUG_FLAG)))
-        if USER_DEBUG_FLAG in request.GET:
-            setattr(request, DEBUG_FLAG, bool(request.get(USER_DEBUG_FLAG)))
-
-        if getattr(request, DEBUG_FLAG, False) is False:
+        if getattr(request, DEBUG_FLAG) is False:
+            return False
+        if getattr(response, DEBUG_FLAG, True) is False:
             return False
 
         # Only attach debugging to valid HTTP responses.
