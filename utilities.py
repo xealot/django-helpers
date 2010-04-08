@@ -1,11 +1,13 @@
 from urllib import urlencode
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.shortcuts import _get_queryset, render_to_response as rtr
 from django.template.context import RequestContext
 from decorator import decorator
 from functools import partial
 import re
+from helpers.dh.middleware.debug import DEBUG_FLAG
+from django.template import loader
 
 PARAM_PREFIX = 'f_' #I consider this an improvement over the django version
 
@@ -80,6 +82,10 @@ def direct_to_template(request, template, extra_context=None, mimetype=None, **k
             dictionary[key] = value
     return render_to_response(request, template, dictionary, mimetype=mimetype)
 
+#:TODO: these _to_ function might be able to consolidate.
+def render_to_string(request, template, dictionary=None):
+    return loader.render_to_string(template, dictionary, context_instance=RequestContext(request))
+
 def render_to_response(request, template, dictionary=None, no_debug=False, cookies=None, **kwargs):
     """
     REQUIRES Request as first argument.
@@ -98,7 +104,18 @@ def render_to_response(request, template, dictionary=None, no_debug=False, cooki
             response.set_cookie(**cookie)
     
     if no_debug is True:
-        response._debug = False
+        setattr(response, DEBUG_FLAG, False)
+    return response
+
+def direct_to_response(request, content, no_debug=False, cookies=None, **kwargs):
+    response = HttpResponse(content, **kwargs)
+
+    if cookies:
+        for cookie in cookies:
+            response.set_cookie(**cookie)
+    
+    if no_debug is True:
+        setattr(response, DEBUG_FLAG, False)
     return response
 
 def split_param_prefixes(params, prefix=PARAM_PREFIX):
