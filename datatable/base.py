@@ -86,7 +86,7 @@ class DataTable(object):
         return self.header
 
     def render_header(self, field, label):
-        heading = pretty_name(label) if label is not None else ''
+        heading = label if label is not None else ''
         th = self.REGULAR_COL if label is not None else self.WIDGET_COL
         if self.add_sort:
             self.writer(th, u'<a href="" class="ajaxSort" rel="', field, u'">', heading, u'</a>', u'</th>')
