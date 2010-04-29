@@ -4,6 +4,7 @@ from django.utils.safestring import SafeUnicode, mark_safe
 from django.template import defaultfilters
 from django.forms.models import fields_for_model
 from ..template.templatetags import general_formatter
+from ..general import get_default_fields
 
 class DataTable(object):
     WIDGET_COL = u'<th class="{sorter:false}" width="1">'
@@ -146,6 +147,9 @@ class DataTable(object):
         #Standard fetching
         if value is None:
             value = getattr(obj, key)
+            custom_display_func = 'get_%s_display' % key
+            if hasattr(obj, custom_display_func):
+                value = getattr(obj, custom_display_func)
             if callable(value):
                 value = value()
 
