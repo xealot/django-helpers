@@ -8,7 +8,7 @@ def get_default_fields(model, fields=None, exclude=None, include_verbose=True, f
     opts = model._meta
     available = opts.fields + opts.many_to_many
     labels = dict([(f.name, f.verbose_name.title()) for f in available])
-    names = [f.name for f in available]
+    names = []
 
     #Strip labels from fields
     if fields is not None:
