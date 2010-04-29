@@ -163,20 +163,23 @@ class DataTable(object):
     
     @staticmethod
     def expand_fields(queryset, fields=(), exclude=()):
-        #:TODO: fields_for_model can handle including and excluding, why repeat it here?
-        if not fields:
-            fields = fields_for_model(queryset.model).keys()
-        #Turn all columns into a list of (field, name)
-        #:TODO: can fields exist as a dict instead of a list of two-tuples?
-        columns = []
-        for f in fields:
-            if f in exclude:
-                continue
-            if isinstance(f, tuple):
-                columns.append(f)
-            else:
-                columns.append((f,f)) #Synthesize tuple
-        return columns
+        #:TODO: This will break non-query tables
+        return get_default_fields(queryset.model, fields, exclude or None, include_verbose=True)
+        
+#        #:TODO: fields_for_model can handle including and excluding, why repeat it here?
+#        if not fields:
+#            fields = fields_for_model(queryset.model).keys()
+#        #Turn all columns into a list of (field, name)
+#        #:TODO: can fields exist as a dict instead of a list of two-tuples?
+#        columns = []
+#        for f in fields:
+#            if f in exclude:
+#                continue
+#            if isinstance(f, tuple):
+#                columns.append(f)
+#            else:
+#                columns.append((f,f)) #Synthesize tuple
+#        return columns
 
 
 
