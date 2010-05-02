@@ -6,7 +6,7 @@ from django.template.context import RequestContext
 from decorator import decorator
 from functools import partial
 import re
-from helpers.dh.middleware.debug import DEBUG_FLAG
+from middleware.debug import DEBUG_FLAG
 from django.template import loader
 
 PARAM_PREFIX = 'f_' #I consider this an improvement over the django version
