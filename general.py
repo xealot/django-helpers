@@ -8,7 +8,7 @@ def get_default_fields(model, fields=None, exclude=None, include_verbose=True, f
     opts = model._meta
     available = opts.fields + opts.many_to_many
     labels = dict([(f.name, f.verbose_name.title()) for f in available])
-    names = []
+    names = [f.name for f in available if f.name != 'id']
 
     #Strip labels from fields
     if fields is not None:
@@ -20,19 +20,20 @@ def get_default_fields(model, fields=None, exclude=None, include_verbose=True, f
             else:
                 names.append(f)
 
+    final = []
     for f in available:
         name = f.name
-        if names and name in names:
+        if names and name not in names:
             continue
-        if exclude and name not in exclude:
+        if exclude and name in exclude:
             continue
-        if for_edit and f.editable and f.formfield():
+        if for_edit and (not f.editable or not f.formfield()):
             continue
-        if name == 'id' and names and 'id' in names:
+        if name == 'id' and names and 'id' not in names:
             continue #Never include ID by default
-        if names and name in names:
-            names.remove(name)
+        final.append(name)
 
+    names = [n for n in names if n in final] #Reorder
     if include_verbose is True:
         return [(n, labels.get(n, n)) for n in names]
     return names

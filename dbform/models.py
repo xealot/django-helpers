@@ -12,6 +12,10 @@ class FieldType(models.Model):
 
 
 class FormDef(models.Model):
+    """
+    This model cannot be abstract because the reference from 
+    Field requires a concrete model.
+    """
     name = models.CharField(max_length=100)
     success_msg = models.CharField(max_length=250, null=True, blank=True, verbose_name="Success Message")
     failure_msg = models.CharField(max_length=250, null=True, blank=True, verbose_name="Failure Message")
