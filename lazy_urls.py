@@ -12,6 +12,7 @@ def list_functions(mod):
 
 def lazy_urlpatterns(*args, **kwargs):
     empty_ok = kwargs.pop('_empty_ok', True)
+    include_django = kwargs.pop('_django', False)
     do_all = kwargs.pop('_all', False)
     patterns = []
 
@@ -24,14 +25,17 @@ def lazy_urlpatterns(*args, **kwargs):
     if len(kwargs):
         for app_label, pre_path in kwargs.items():
             apps_done += [app_label]
-            patterns.extend(lazy_urlpatterns_app(app_label, pre_path, empty_ok))
+            # You can exclude URLs by passing them in as kwargs and setting them to False.
+            if pre_path is not False:
+                patterns.extend(lazy_urlpatterns_app(app_label, pre_path, empty_ok))
     
     # Do all the unspecified patterns now.
     if do_all or (len(kwargs) == 0 and len(args) == 0):
         for app_name in settings.INSTALLED_APPS:
             if app_name not in apps_done:
-                tmp_name = app_name.split('.')[-1]
-                patterns.extend(lazy_urlpatterns_app(tmp_name, tmp_name, empty_ok))
+                if include_django or (include_django is False and app_name.startswith('django.') is False):
+                    tmp_name = app_name.split('.')[-1]
+                    patterns.extend(lazy_urlpatterns_app(tmp_name, tmp_name, empty_ok))
     return patterns
     
 def lazy_urlpatterns_app(app_label, pre_path=None, emptyOK=True):
