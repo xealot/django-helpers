@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import url
 from django.utils.importlib import import_module
 from django.utils.module_loading import module_has_submodule
 import inspect
@@ -27,7 +27,6 @@ def lazy_urlpatterns(*args, **kwargs):
             patterns.extend(lazy_urlpatterns_app(app_label, pre_path, empty_ok))
     
     # Do all the unspecified patterns now.
-    print apps_done
     if do_all or (len(kwargs) == 0 and len(args) == 0):
         for app_name in settings.INSTALLED_APPS:
             if app_name not in apps_done:
