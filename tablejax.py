@@ -2,7 +2,7 @@
 import re
 from django.http import HttpResponse
 from django.db.models import Q
-from django.template import loader, Context
+from django.template import loader
 from django.template.context import RequestContext
 
 tab_return_re = re.compile('[\t\n\r]+| {2,}', re.MULTILINE)
