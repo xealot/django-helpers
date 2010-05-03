@@ -1,5 +1,8 @@
+from django.conf import settings
 from django.conf.urls.defaults import *
-import sys, inspect
+from django.utils.importlib import import_module
+from django.utils.module_loading import module_has_submodule
+import inspect
 
 def is_mod_function(mod, func):
     return inspect.isfunction(func) and inspect.getmodule(func) == mod
@@ -7,10 +10,45 @@ def is_mod_function(mod, func):
 def list_functions(mod):
     return [func.__name__ for func in mod.__dict__.itervalues() if is_mod_function(mod, func)]
 
-def lazy_url_patterns(module, pre_path=None):
-    view_names = list_functions(module)
-    views = dict([(x, getattr(module, x)) for x in view_names])
-    view_args = {}
+def lazy_urlpatterns(*args, **kwargs):
+    empty_ok = kwargs.pop('_empty_ok', True)
+    do_all = kwargs.pop('_all', False)
+    patterns = []
+
+    apps_done = []
+    if len(args):
+        for app_label in args:
+            apps_done += [app_label]
+            patterns.extend(lazy_urlpatterns_app(app_label, app_label, empty_ok))
+    
+    if len(kwargs):
+        for app_label, pre_path in kwargs.items():
+            apps_done += [app_label]
+            patterns.extend(lazy_urlpatterns_app(app_label, pre_path, empty_ok))
+    
+    # Do all the unspecified patterns now.
+    print apps_done
+    if do_all or (len(kwargs) == 0 and len(args) == 0):
+        for app_name in settings.INSTALLED_APPS:
+            if app_name not in apps_done:
+                tmp_name = app_name.split('.')[-1]
+                patterns.extend(lazy_urlpatterns_app(tmp_name, tmp_name, empty_ok))
+    return patterns
+    
+def lazy_urlpatterns_app(app_label, pre_path=None, emptyOK=True):
+    for app_name in settings.INSTALLED_APPS:
+        if app_label == app_name.split('.')[-1]:
+            app_module = import_module(app_name)
+            try:
+                view_module = import_module('.views', app_name)
+            except ImportError:
+                if emptyOK is True and not module_has_submodule(app_module, 'views'):
+                    return []
+                else:
+                    raise
+    
+    view_names = list_functions(view_module)
+    views = dict([(x, getattr(view_module, x)) for x in view_names])
     urls = []
     for name, view in views.items():
         tmp_urls = []
