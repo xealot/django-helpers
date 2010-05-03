@@ -1,4 +1,7 @@
-
+from django.contrib import admin
+from django.db import models
+from django.db.models.loading import get_models, get_app
+from django.contrib.admin.sites import AlreadyRegistered
 
 def get_default_fields(model, fields=None, exclude=None, include_verbose=True, for_edit=False):
     """
@@ -37,13 +40,20 @@ def get_default_fields(model, fields=None, exclude=None, include_verbose=True, f
         return [(n, labels.get(n, n)) for n in names]
     return names
 
-
-
-
-
-
-
-
-
-
-
+def admin_register(*args, **kwargs):
+    tmp_site = kwargs.pop('site', admin.site)
+    if len(args):
+        model_list = []
+        for x in args:
+            model_list.extend(get_models(get_app(x)))
+    else:
+        model_list = get_models()
+    for m in model_list:
+        if isinstance(m, type) and issubclass(m, models.Model):
+            # It's okay to ignore already registered entries.  This should only pick up
+            # the unregistered bits.
+            try:
+                tmp_site.register(m)
+            except AlreadyRegistered:
+                pass
+        
