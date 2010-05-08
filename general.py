@@ -14,7 +14,7 @@ def get_default_fields(model, fields=None, exclude=None, include_verbose=True, f
     names = [f.name for f in available if f.name != 'id']
 
     #Strip labels from fields
-    if fields is not None:
+    if fields:
         names = []
         for f in fields:
             if isinstance(f, (list, tuple)):
