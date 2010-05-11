@@ -2,6 +2,7 @@ from django.db import models
 from ..utilities import slugify
 from ..fields.json import JSONField
 from ..fields.binary import BlobField
+from ..keyvaluedb.models import SavedValue as KVDBValues
 
 
 class FieldType(models.Model):
@@ -66,11 +67,8 @@ class Field(models.Model):
             super(Field, self).save(**kwargs)
             
 
-class SavedValue(models.Model):
+class SavedValue(KVDBValues):
     field = models.ForeignKey('Field')
-    key = models.SlugField(max_length=100, editable=False)
-    value = models.TextField(null=True, blank=True)
-    blob = BlobField(null=True, blank=True)
     
     class Meta:
         abstract = True

@@ -1,4 +1,5 @@
 from django.core.exceptions import MultipleObjectsReturned
+from django.db.models.base import Model
 from django.db import models
 from ..fields.binary import BlobField
 
@@ -21,11 +22,15 @@ def set_saved_values(dictionary, to=SavedValue, narrow=None):
         filter = {'key': k}
         filter.update(narrow or {})
         if v is not None and v != '':
+            val = unicode(v)
+            if isinstance(v, Model):
+                val = v.pk
+            
             try:
                 to.objects.get(**filter)
-                to.objects.filter(**filter).update(value=str(v))
+                to.objects.filter(**filter).update(value=val)
             except to.DoesNotExist:
-                to.objects.create(value=str(v), **filter)
+                to.objects.create(value=val, **filter)
             except MultipleObjectsReturned:
                 raise Exception('Multiple objects where returned during the get step of saving. This means your narrow parameter is not sufficient.')
         else:
