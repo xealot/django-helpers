@@ -77,18 +77,19 @@ def coerce_field(field, value):
     
     return value
 
-def dbform_values(SavedModel, formdef, context=None):
+def dbform_values(SavedModel, formdef, context=None, narrow=None):
     """
     Return a Sorted Dictionary of {Field: Resolved Value}, this 
     is useful for displaying what is saved in the dbform.
     """
+    narrow = narrow or {}
     field_vals = SortedDict()
     #Setup default dictionary
     all_fields = formdef.field_set.select_related()
     for f in all_fields:
         field_vals[f] = f.default
     #Apply any saved user data
-    saved_data = SavedModel.objects.select_related().filter(field__form=formdef)
+    saved_data = SavedModel.objects.select_related().filter(field__form=formdef, **narrow)
     for d in saved_data:
         field_vals[d.field] = d.value
     #Resolve and Coerce fields
@@ -96,12 +97,12 @@ def dbform_values(SavedModel, formdef, context=None):
         field_vals[f] = coerce_field(f, resolve_default(context, v))
     return field_vals
 
-def dbform_context(SavedModel, formdef, context=None):
+def dbform_context(SavedModel, formdef, context=None, narrow=None):
     """
     This function returns a Sorted Dictionary of {key: value} for use 
     with templates and variable substitution.
     """
-    data = dbform_values(SavedModel, formdef, context=context)
+    data = dbform_values(SavedModel, formdef, context=context, narrow=narrow)
     values = SortedDict()
     for f, v in data.items():
         values[f.key] = v
