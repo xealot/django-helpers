@@ -1,13 +1,14 @@
+import re
+import unicodedata
 from urllib import urlencode
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.shortcuts import _get_queryset, render_to_response as rtr
 from django.template.context import RequestContext
+from django.template import loader
 from decorator import decorator
 from functools import partial
-import re
 from middleware.debug import DEBUG_FLAG
-from django.template import loader
 
 PARAM_PREFIX = 'f_' #I consider this an improvement over the django version
 
@@ -151,15 +152,16 @@ def get_query_string(params, new_params=None, remove=None, prefix=None):
     p_all.update(p)
     return '?%s' % urlencode(p_all)
 
+RE_NON_WORD_SPACE = re.compile('[^\w\s-]')
+RE_SPACE = re.compile('[-\s]+')
 def slugify(value):
     """
     Normalizes string, converts to lowercase, removes non-alpha characters,
     and converts spaces to underscores.
     """
-    import unicodedata
     value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
-    value = unicode(re.sub('[^\w\s-]', '', value).strip().lower())
-    return re.sub('[-\s]+', '_', value)
+    value = unicode(RE_NON_WORD_SPACE.sub('', value).strip().lower())
+    return RE_SPACE.sub('_', value)
 
 def random_password(minpairs=3, maxpairs=4):
     '''Create a random password as pairs of consonants and vowels.  The 
