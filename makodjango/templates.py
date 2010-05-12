@@ -25,6 +25,10 @@ def date(context, value, arg=None):
         value = datetime.datetime.now()
     return filters.date(value, arg)
 
+#:todo: doesn't belong in std lib
+def ttuple(context, value, arg=None):
+    return date(context, datetime.datetime(*(value[0:6])), arg=arg)
+
 def pluralize(context, value, arg=None):
     return filters.pluralize(value, arg)
 
