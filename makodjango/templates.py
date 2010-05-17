@@ -35,6 +35,9 @@ def pluralize(context, value, arg=None):
 def yesno(context, value, arg=None):
     return filters.yesno(value, arg)
 
+def truncatewords(context, value, arg=None):
+    return filters.truncatewords(value, arg)
+
 def wordwrap(context, value, arg=None):
     return filters.wordwrap(value, arg)
 
