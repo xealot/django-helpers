@@ -87,7 +87,7 @@ class DebugStripMiddleware(object):
     view kwargs.
     """
     def process_view(self, request, view_func, view_args, view_kwargs):
-        view_kwargs.pop('debug')
+        view_kwargs.pop('debug', None)
         return None
 
 
