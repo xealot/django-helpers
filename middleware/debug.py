@@ -78,5 +78,16 @@ class DebugMiddleware(object):
                 except:
                     pass
         return response
-    
+
+
+class DebugStripMiddleware(object):
+    """
+    This class comes after the DebugMiddleware class 
+    to make sure that debug keys get stripped from the 
+    view kwargs.
+    """
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        view_kwargs.pop('debug')
+        return None
+
 
