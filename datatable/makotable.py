@@ -16,10 +16,16 @@ def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None,
     fields = list(fields)
     if record_url is not None:
         classes.append(u"{record_url: '%s'}" % record_url)
-    if make_selectable is True:
+    if make_selectable is not False:
         classes.append(u'selectable')
         fields.insert(0, ('checkbox', None))
-        listfield_callback['checkbox'] = lambda attr, obj, context: '<input type="checkbox" name="selection" value="%s" />' % obj.pk
+        if make_selectable is True:
+            listfield_callback['checkbox'] = lambda attr, obj, context: '<input type="checkbox" name="selection" value="%s" />' % obj.pk
+        else:
+            if isinstance(queryset, list):
+                listfield_callback['checkbox'] = lambda attr, obj, context: '<input type="checkbox" name="selection" value="%s" />' % obj[make_selectable]
+            else:
+                listfield_callback['checkbox'] = lambda attr, obj, context: '<input type="checkbox" name="selection" value="%s" />' % getattr(obj, make_selectable)
     if make_editable is not False:
         listfield_callback[1] = lambda attr, obj, context: '<a href="%s">%s</a>' % (reverse(make_editable, kwargs=obj.__dict__), display_attribute(obj, attr))
     # id="pageTable" for ajax
