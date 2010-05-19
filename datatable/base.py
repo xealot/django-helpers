@@ -5,6 +5,7 @@ from django.template import defaultfilters
 from django.forms.models import fields_for_model
 from ..template.templatetags import general_formatter
 from ..general import get_default_fields
+from django.template.defaultfilters import slugify
 
 class DataTable(object):
     WIDGET_COL = u'<th class="{sorter:false}" width="1">'
@@ -146,7 +147,10 @@ class DataTable(object):
 
         #Standard fetching
         if value is None:
-            value = getattr(obj, key)
+            try:
+                value = getattr(obj, key)
+            except AttributeError:
+                value = obj[key]
             custom_display_func = 'get_%s_display' % key
             if hasattr(obj, custom_display_func):
                 value = getattr(obj, custom_display_func)
@@ -167,23 +171,24 @@ class DataTable(object):
     
     @staticmethod
     def expand_fields(queryset, fields=(), exclude=()):
-        #:TODO: This will break non-query tables
-        return get_default_fields(queryset.model, fields, exclude or None, include_verbose=True)
+        #:TODO: can fields exist as a dict instead of a list of two-tuples?
+        if hasattr(queryset, 'model'):
+            return get_default_fields(queryset.model, fields, exclude or None, include_verbose=True)
         
-#        #:TODO: fields_for_model can handle including and excluding, why repeat it here?
-#        if not fields:
-#            fields = fields_for_model(queryset.model).keys()
-#        #Turn all columns into a list of (field, name)
-#        #:TODO: can fields exist as a dict instead of a list of two-tuples?
-#        columns = []
-#        for f in fields:
-#            if f in exclude:
-#                continue
-#            if isinstance(f, tuple):
-#                columns.append(f)
-#            else:
-#                columns.append((f,f)) #Synthesize tuple
-#        return columns
+        #assume this is a dictionary
+        if not fields:
+            fields = queryset.keys()
+        
+        #Turn all columns into a list of (field, name)
+        columns = []
+        for f in fields:
+            if f in exclude:
+                continue
+            if isinstance(f, tuple):
+                columns.append(f)
+            else:
+                columns.append((f, f)) #Synthesize tuple
+        return columns
 
 
 
