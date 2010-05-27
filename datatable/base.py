@@ -157,7 +157,7 @@ class DataTable(object):
                 value = getattr(obj, custom_display_func)
             if callable(value):
                 value = value()
-        value = force_unicode(value)
+        value = force_unicode(value) #Needs to be unicode before filters
 
         #Now Filter
         if self.filter is None: #Standard sanity filter
