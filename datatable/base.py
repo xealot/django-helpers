@@ -6,6 +6,7 @@ from django.forms.models import fields_for_model
 from ..template.templatetags import general_formatter
 from ..general import get_default_fields
 from django.template.defaultfilters import slugify
+from django.utils.encoding import force_unicode
 
 class DataTable(object):
     WIDGET_COL = u'<th class="{sorter:false}" width="1">'
@@ -156,6 +157,7 @@ class DataTable(object):
                 value = getattr(obj, custom_display_func)
             if callable(value):
                 value = value()
+        value = force_unicode(value)
 
         #Now Filter
         if self.filter is None: #Standard sanity filter
