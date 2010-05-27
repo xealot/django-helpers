@@ -10,6 +10,7 @@ from django.utils.html import escape
 from django.utils.encoding import force_unicode
 from django.utils.safestring import SafeData, EscapeData, mark_safe
 from django.contrib.humanize.templatetags import humanize
+from django.contrib.markup.templatetags import markup
 
 #relative import to get original template display attribute
 from ..template import templatetags as dhtags
@@ -52,6 +53,9 @@ def unordered_list(context, value):
 
 def ordinal(context, value):
     return humanize.ordinal(value)
+
+def markdown(context, value):
+    return markup.markdown(value)
 
 #Is there a way to pass context implicitly? Probably Not...
 def url(context, view_name, args=None, kwargs=None):
