@@ -29,7 +29,7 @@ class DebugMiddleware(object):
 
     def process_request(self, request):
         """ Check IP's and request to see if we should debug. """
-        setattr(request, DEBUG_FLAG, False)
+        setattr(request, DEBUG_FLAG, settings.DEBUG)
         if not settings.INTERNAL_IPS or request.META.get('REMOTE_ADDR', '') in settings.INTERNAL_IPS:
             setattr(request, DEBUG_FLAG, True)
         if request.is_ajax():
