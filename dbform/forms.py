@@ -2,21 +2,26 @@ from django.forms.forms import BaseForm
 from django.core.exceptions import MultipleObjectsReturned
 
 class DBForm(BaseForm):
-    def save(self, to, narrow=None):
+    def save(self, to, narrow=None, skip_initial=True):
         """
         Saves form data to saved settings models. The 
         narrow parameter is used to limit the replacement 
         and update selection as well as default some values.
+        
+        skip_initial: If the to save value matches the initial 
+        value on the form skip saving or updating this value.
         """
         dictionary = self.cleaned_data
         for k,v in dictionary.items():
             field = self.key_to_field_id[k]
             filter = {'key': k, 'field': field}
             filter.update(narrow or {})
+            if skip_initial and self.initial.get(k, None) == v:
+                continue
             if v is not None and v != '':
                 try:
                     to.objects.get(**filter)
-                    if field.type.pk == 6: #Image Field
+                    if field.type_id == 6: #Image Field
                         to.objects.filter(**filter).update(value=str(v), blob=v.file)
                     else:
                         to.objects.filter(**filter).update(value=str(v))

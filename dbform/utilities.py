@@ -105,6 +105,8 @@ def dbform_context(SavedModel, formdef, context=None, narrow=None):
     data = dbform_values(SavedModel, formdef, context=context, narrow=narrow)
     values = SortedDict()
     for f, v in data.items():
+        #if f.type_id == 6:
+            #v = {'filename': v, 'bin': }
         values[f.key] = v
     return values
 
