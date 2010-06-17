@@ -4,7 +4,7 @@ from django.db import models
 from cgi import parse_qs
 from django.utils import simplejson as json
 from django.template import Context, Template
-from forms import DBForm
+from forms import DBForm, ImageSizeLimitedField
 
 TYPE_TEXT = 1
 TYPE_CHOICE = 2
@@ -38,7 +38,7 @@ def dbform_factory(formdef, querysets=None):
         if field.type.pk == TYPE_BOOL:
             base_fields[field.key] = forms.BooleanField(widget=forms.RadioSelect(choices=((True, 'Yes'),(False, 'No'))), **default_args)
         if field.type.pk == TYPE_IMAGE:
-            base_fields[field.key] = forms.ImageField(**default_args)
+            base_fields[field.key] = ImageSizeLimitedField(**default_args)
 
         #Apply HTML attributes to widget.attrs
         final_attrs = {}
@@ -66,7 +66,9 @@ def dbform_factory(formdef, querysets=None):
 
 #:TODO: this might be a little dangerous, when an RE and resolve function will do.
 def resolve_default(context, text):
-    return Template(text).render(Context(context))
+    if isinstance(text, basestring):
+        return Template(text).render(Context(context))
+    return text
 
 def coerce_field(field, value):
     if field.type.pk == TYPE_BOOL:
@@ -74,28 +76,36 @@ def coerce_field(field, value):
             return False
         else:
             return True
-    
     return value
+
+def dbform_resolve(field_value_dict, context):
+    for f, v in field_value_dict.items():
+        field_value_dict[f] = coerce_field(f, resolve_default(context, v))
+    return field_value_dict    
+
+#:TODO: this is cacheable.
+def dbform_defaults(formdef, context=None, resolve=True):
+    """
+    Get default values from form definition based on template 
+    rendering and context.
+    """
+    assert context is not None or resolve is False, 'If you specify resolve=True you must supply a context'
+    all_fields = formdef.field_set.select_related()
+    defaults = SortedDict()
+    for f in all_fields:
+        defaults[f] = resolve_default(context, f.default) if resolve is True else f.default
+    return defaults
 
 def dbform_values(SavedModel, formdef, context=None, narrow=None):
     """
     Return a Sorted Dictionary of {Field: Resolved Value}, this 
     is useful for displaying what is saved in the dbform.
     """
-    narrow = narrow or {}
-    field_vals = SortedDict()
-    #Setup default dictionary
-    all_fields = formdef.field_set.select_related()
-    for f in all_fields:
-        field_vals[f] = f.default
-    #Apply any saved user data
-    saved_data = SavedModel.objects.select_related().filter(field__form=formdef, **narrow)
-    for d in saved_data:
-        field_vals[d.field] = d.value
+    values = dbform_defaults(formdef, context, resolve=False)
+    #Apply any saved user data !This cannot be the same query as the default getter, since unsaved fields would not return a row!
+    values.update(dict([(r.field, r.value) for r in SavedModel.objects.select_related('field__type').filter(field__form=formdef, **narrow or {}).defer('blob')]))
     #Resolve and Coerce fields
-    for f, v in field_vals.items():
-        field_vals[f] = coerce_field(f, resolve_default(context, v))
-    return field_vals
+    return dbform_resolve(values, context)
 
 def dbform_context(SavedModel, formdef, context=None, narrow=None):
     """
