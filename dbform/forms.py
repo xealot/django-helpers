@@ -21,6 +21,8 @@ class DBForm(BaseForm):
         skip_initial: If the to save value matches the initial 
         value on the form skip saving or updating this value.
         """
+        from helpers.dh.dbform.utilities import TYPE_IMAGE #Avoid circular import
+
         dictionary = self.cleaned_data
         for k,v in dictionary.items():
             field = self.key_to_field_id[k]
@@ -31,12 +33,12 @@ class DBForm(BaseForm):
             if v is not None and v != '':
                 try:
                     to.objects.get(**filter)
-                    if field.type_id == 6: #Image Field
+                    if field.type_id == TYPE_IMAGE: #Image Field
                         to.objects.filter(**filter).update(value=str(v), blob=v.file)
                     else:
                         to.objects.filter(**filter).update(value=str(v))
                 except to.DoesNotExist:
-                    if field.type_id == 6: #Image Field
+                    if field.type_id == TYPE_IMAGE: #Image Field
                         to.objects.create(value=str(v), blob=v.file, **filter)
                     else:
                         to.objects.create(value=str(v), **filter)
