@@ -22,12 +22,10 @@ def dbform_factory(formdef, querysets=None):
     for field in formdef.field_set.select_related():
         key_to_field_id[field.key] = field
         default_args = {'required': field.required, 'help_text': field.help_text, 'label': field.label, 'initial': field.default}
-        if field.type.pk == TYPE_TEXT:
-            base_fields[field.key] = forms.CharField(max_length=100, **default_args)
-        if field.type.pk == TYPE_CHOICE:
+        if field.type_id == TYPE_CHOICE:
             choices = [(v,v) for v in field.field_data.split('|')]
             base_fields[field.key] = forms.ChoiceField(choices=choices, widget=forms.RadioSelect, **default_args)
-        if field.type.pk == TYPE_DB_ENTITY:
+        elif field.type_id == TYPE_DB_ENTITY:
             if querysets is not None and field.key in querysets:
                 qs = querysets[field.key]
             else:
@@ -35,10 +33,14 @@ def dbform_factory(formdef, querysets=None):
                 Model = models.get_model(app_label, model_name)
                 qs = Model.objects.all()
             base_fields[field.key] = forms.ModelChoiceField(qs, **default_args)
-        if field.type.pk == TYPE_BOOL:
+        elif field.type_id == TYPE_BOOL:
             base_fields[field.key] = forms.BooleanField(widget=forms.RadioSelect(choices=((True, 'Yes'),(False, 'No'))), **default_args)
-        if field.type.pk == TYPE_IMAGE:
+        elif field.type_id == TYPE_IMAGE:
             base_fields[field.key] = ImageSizeLimitedField(**default_args)
+        elif field.type_id == TYPE_LARGE_TEXT:
+            base_fields[field.key] = forms.CharField(widget=forms.Textarea, **default_args)
+        else:
+            base_fields[field.key] = forms.CharField(max_length=100, **default_args)
 
         #Apply HTML attributes to widget.attrs
         final_attrs = {}
@@ -71,7 +73,7 @@ def resolve_default(context, text):
     return text
 
 def coerce_field(field, value):
-    if field.type.pk == TYPE_BOOL:
+    if field.type_id == TYPE_BOOL:
         if value.lower() in COERCE_BOOLEAN_VALUES:
             return False
         else:
