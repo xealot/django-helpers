@@ -95,8 +95,8 @@ class DataTableMako(DataTable):
         return super(DataTableMako, self).get_group_render_value(obj, value)
 
     def render_header(self, field, label):
-        if hasattr(self.caller, 'th_%s' % label):
-            self.writer(self.capture(getattr(self.caller, 'th_%s' % label)))
+        if hasattr(self.caller, 'th_%s' % field):
+            self.writer(self.capture(getattr(self.caller, 'th_%s' % field)))
         else:
             super(DataTableMako, self).render_header(field, label)
 
