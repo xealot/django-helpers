@@ -1,7 +1,17 @@
 from django.forms.forms import BaseForm
-from django.core.exceptions import MultipleObjectsReturned
+from django.forms.fields import ImageField
+from django.core.exceptions import MultipleObjectsReturned, ValidationError
+
+BLOB_SIZE_LIMIT = 128000
+
+class ImageSizeLimitedField(ImageField):
+    def validate(self, value):
+        super(ImageSizeLimitedField, self).validate(value)
+        if value.size > BLOB_SIZE_LIMIT:
+            raise ValidationError('Please limit the image to 125KB in size. Your image was larger than this.')
 
 class DBForm(BaseForm):
+    #:TODO: on save this should look at default avlues, if they match REMOVE the entry.
     def save(self, to, narrow=None, skip_initial=True):
         """
         Saves form data to saved settings models. The 
