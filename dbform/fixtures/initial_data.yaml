@@ -1,13 +1,13 @@
-- fields: {name: Small Text}
+- fields: {name: Single Line Text}
   model: dbform.fieldtype
   pk: 1
-- fields: {name: Choice (Single)}
+- fields: {name: Dropdown}
   model: dbform.fieldtype
   pk: 2
 - fields: {name: DB Entity}
   model: dbform.fieldtype
   pk: 3
-- fields: {name: Large Text}
+- fields: {name: Paragraph Text}
   model: dbform.fieldtype
   pk: 4
 - fields: {name: Boolean (True/False)}

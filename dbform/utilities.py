@@ -21,6 +21,8 @@ def dbform_factory(formdef, querysets=None):
     key_to_field_id = {} #This is so the save function on DBForm has enough information to save
     for field in formdef.field_set.select_related():
         key_to_field_id[field.key] = field
+        if field.editable is False:
+            continue
         default_args = {'required': field.required, 'help_text': field.help_text, 'label': field.label, 'initial': field.default}
         if field.type_id == TYPE_CHOICE:
             choices = [(v,v) for v in field.field_data.split('|')]

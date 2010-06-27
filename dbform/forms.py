@@ -7,7 +7,7 @@ BLOB_SIZE_LIMIT = 128000
 class ImageSizeLimitedField(ImageField):
     def validate(self, value):
         super(ImageSizeLimitedField, self).validate(value)
-        if value.size > BLOB_SIZE_LIMIT:
+        if value and value.size > BLOB_SIZE_LIMIT:
             raise ValidationError('Please limit the image to 125KB in size. Your image was larger than this.')
 
 class DBForm(BaseForm):
