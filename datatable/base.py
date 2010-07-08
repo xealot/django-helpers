@@ -18,8 +18,9 @@ from django.utils.encoding import force_unicode
 class MissingPluginRequirementError(Exception): pass
 class CallChain(object):
     """Type for keeping up with chain variable and adding pre and post elements"""
-    def __init__(self, chain, *a, **kw):
-        self.chain, self.prefix, self.suffix = chain, [], []
+    def __init__(self, instance, initial, chain=None, *a, **kw):
+        chain = chain or initial
+        self.instance, self.initial, self.chain, self.prefix, self.suffix = instance, initial, chain, [], []
         
     def pre(self, *args):
         self.prefix.extend(args)
@@ -60,46 +61,48 @@ class BaseTable(object):
         self._plugin_classes.append(plugin_class)
         self._plugins.append(plugin)
 
-    def call_chain(self, method_name, initial=None, chain=None, *args, **kwargs):
-        chain = chain or initial
-        callchain = CallChain(chain)
+    def call_chain(self, method_name, value, *args, **kwargs):
+        callchain = CallChain(self, value)
         for plugin in self._plugins:
             method = getattr(plugin, method_name, None)
             if method is not None and callable(method):
-                callchain.chain = method(self, initial, callchain.chain, callchain, *args, **kwargs)
+                new_value = method(callchain, *args, **kwargs)
+                if new_value is not None:
+                    callchain.chain = new_value
+                #method(callchain, *args, **kwargs)
         return callchain.get_list()
 
-    def head(self, initial, chain=None):
+    def head(self, value):
         """Called once before row iteration"""
-        return self.call_chain('head', initial, chain)
+        return self.call_chain('head', value)
 
-    def header(self, initial, chain=None, column_index=None):
+    def header(self, value, column_index=None):
         """Called for every header"""
-        return self.call_chain('header', initial, chain, column_index=None)
+        return self.call_chain('header', value, column_index=None)
 
-    def body(self, initial, chain=None):
+    def body(self, value):
         """Called once before row iteration"""
-        return self.call_chain('body', initial, chain)
+        return self.call_chain('body', value)
     
-    def row(self, initial, chain=None, row_number=0):
+    def row(self, value, row_number=0):
         """Called for each row, always returns a list"""
-        return self.call_chain('row', initial, chain, row_number)
+        return self.call_chain('row', value, row_number)
 
-    def cell(self, initial, chain=None, data=None, row_number=0, column_index=None):
+    def cell(self, value, data=None, row_number=0, column_index=None):
         """Called on each piece of data added into the table"""
-        return self.call_chain('cell', initial, chain, data, row_number, column_index)
+        return self.call_chain('cell', value, data, row_number, column_index)
 
-    def footer(self, initial, chain=None):
+    def footer(self, value):
         """Wrapping the foot calls"""
-        return self.call_chain('footer', initial, chain)
+        return self.call_chain('footer', value)
 
-    def foot(self, initial, chain=None):
+    def foot(self, value):
         """Called on each piece of data added into the table"""
-        return self.call_chain('foot', initial, chain)
+        return self.call_chain('foot', value)
     
-    def finalize(self, initial, chain=None):
+    def finalize(self, value):
         """Close Table"""
-        return self.call_chain('finalize', initial, chain)
+        return self.call_chain('finalize', value)
 
 
 class BaseDictTable(BaseTable):
@@ -191,32 +194,32 @@ class DTPluginBase(object):
 
 
 class DTUnicode(DTPluginBase):
-    def header(self, instance, initial, chain, chain_list, column_index):
-        return force_unicode(chain)
+    def header(self, callchain, column_index):
+        callchain.chain = force_unicode(callchain.chain)
 
-    def cell(self, instance, initial, chain, chain_list, data, row_number, column_index):
-        return force_unicode(chain)
+    def cell(self, callchain, data, row_number, column_index):
+        return force_unicode(callchain.chain)
 
 
 class DTHtmlTable(DTPluginBase):
     REQUIRES = [DTUnicode]
-    def head(self, instance, initial, chain, chain_list):
-        return E.THEAD(*chain)
+    def head(self, callchain):
+        return E.THEAD(*callchain.chain)
     
-    def header(self, instance, initial, chain, chain_list, column_index):
-        return E.TH(chain)
+    def header(self, callchain, column_index):
+        return E.TH(callchain.chain)
 
-    def body(self, instance, initial, chain, chain_list):
-        return E.TBODY(*chain)
+    def body(self, callchain):
+        return E.TBODY(*callchain.chain)
     
-    def row(self, instance, initial, chain, chain_list, row_number):
-        return E.TR(*chain)
+    def row(self, callchain, row_number):
+        return E.TR(*callchain.chain)
     
-    def cell(self, instance, initial, chain, chain_list, data, row_number, column_index):
-        return E.TD(chain)
+    def cell(self, callchain, data, row_number, column_index):
+        return E.TD(callchain.chain)
 
-    def finalize(self, instance, initial, chain, chain_list):
-        return E.TABLE(*chain)
+    def finalize(self, callchain):
+        return E.TABLE(*callchain.chain)
 
 
 class DTWrapper(DTPluginBase):
@@ -224,8 +227,8 @@ class DTWrapper(DTPluginBase):
     def __init__(self, **kwargs):
         self.attrs = kwargs
 
-    def finalize(self, instance, initial, chain, chain_list):
-        return E.TABLE(*chain, **self.attrs)
+    def finalize(self, callchain):
+        return E.TABLE(*callchain.chain, **self.attrs)
 
 
 class DTZebra(DTPluginBase):
@@ -233,15 +236,15 @@ class DTZebra(DTPluginBase):
     def __init__(self, odd='odd', even='even'):
         self.odd, self.even = odd, even
         
-    def row(self, instance, initial, chain, chain_list, row_number):
-        return self.add_class(chain, row_number % 2 == 0 and [self.odd] or [self.even])
+    def row(self, callchain, row_number):
+        return self.add_class(callchain.chain, row_number % 2 == 0 and [self.odd] or [self.even])
 
 
 class DTJsSort(DTPluginBase):
     REQUIRES = [DTHtmlTable]
     """This class adds javascript sorting to the table headers and tag."""
-    def finalize(self, instance, initial, chain, chain_list):
-        return self.add_class(chain, ['sortable'])
+    def finalize(self, callchain):
+        return self.add_class(callchain.chain, ['sortable'])
 
 
 class DTRowLimit(DTPluginBase):
@@ -249,16 +252,15 @@ class DTRowLimit(DTPluginBase):
     def __init__(self, limit):
         self.limit = limit
     
-    def row(self, instance, initial, chain, chain_list, row_number):
+    def row(self, callchain, row_number):
         if row_number > self.limit:
             raise StopIteration()
-        return chain
 
 
 class DTSpecialFooter(DTPluginBase):
     REQUIRES = [DTHtmlTable]
     """This class adds a super footer to the table"""
-    def footer(self, instance, initial, chain, chain_list):
+    def footer(self, callchain):
         return E.TFOOT()
 
 
@@ -268,12 +270,10 @@ class DTGroupBy(DTPluginBase):
     def __init__(self):
         pass
     
-    def row(self, instance, initial, chain, chain_list, row_number):
-        first_row = chain[0]
-        colspan = str(len(first_row))
-        groupby = E.TR(E.TD('GROUP', E.CLASS(self.add_class_string(first_row.get('class'), ['group'])), colspan=colspan))
-        chain_list.pre(groupby)
-        return chain
+    def row(self, callchain, row_number):
+        colspan = str(len(callchain.chain))
+        groupby = E.TR(E.TD('GROUP', E.CLASS(self.add_class_string(callchain.chain.get('class'), ['group'])), colspan=colspan))
+        callchain.pre(groupby)
 
 
 class DTCallback(DTPluginBase):
@@ -281,15 +281,14 @@ class DTCallback(DTPluginBase):
     def __init__(self, callbacks):
         self.callbacks = callbacks
     
-    def cell(self, instance, initial, chain, chain_list, data, row_number, column_index):
+    def cell(self, callchain, data, row_number, column_index):
         if column_index in self.callbacks:
             callback = self.callbacks[column_index]
-            chain.text = callback(column_index, data)
-        return chain
+            return callback(column_index, data)
         
 
 callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
-bt = BaseDictTable(include_header=False, plugins=(DTUnicode, DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
+bt = BaseDictTable(include_header=False, plugins=(DTUnicode, DTCallback(callbacks), DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy))
 #bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, ))
 by = BaseDictTable(plugins=(DTUnicode,))
 print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
