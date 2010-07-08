@@ -159,14 +159,21 @@ class BaseDictTable(BaseTable):
 
 
 
-        
+from lxml import etree        
+from plugins import DTUnicode, DTHtmlTable, DTPluginBase
 
-#callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
-#bt = BaseDictTable(include_header=False, plugins=(DTUnicode, DTCallback(callbacks), DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy))
-#bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, ))
-#by = BaseDictTable(plugins=(DTUnicode,))
-#print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
-#print by.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
+class DTZebra(DTPluginBase):
+    REQUIRES = [DTHtmlTable]
+    def __init__(self, index=0):
+        self.index = index
+
+    def cell(self, callchain, data, row_number, column_index):
+        pass
+
+
+
+bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, ))
+print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
 
 
 

@@ -4,7 +4,7 @@ Data table plugins
 from lxml import etree
 from lxml.html import builder as E
 from django.utils.encoding import force_unicode
-from django.utils.encoding import force_unicode
+
 
 class DTPluginBase(object):
     REQUIRES = []

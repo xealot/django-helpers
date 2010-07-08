@@ -6,6 +6,20 @@ from functools import partial
 
 from ..utilities import get_query_string
 from ..template.templatetags import display_attribute
+from plugins import DTUnicode, DTHtmlTable, DTWrapper
+
+def table2(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
+    plugins = [DTUnicode, DTHtmlTable]
+    #Give table appropriate CSS classes
+    if not classes:
+        classes = ['zebra', 'records', 'paging']
+    if record_url is not None:
+        classes = classes + [u"{record_url: '%s'}" % record_url]
+
+    if wrapper is True:
+        plugins.append(DTWrapper(style='width: 100%;'))
+
+    
 
 def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
     listfield_callback = listfield_callback or {}
@@ -16,6 +30,7 @@ def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None,
     fields = list(fields)
     if record_url is not None:
         classes.append(u"{record_url: '%s'}" % record_url)
+
     if make_selectable is not False:
         classes.append(u'selectable')
         fields.insert(0, ('checkbox', None))
@@ -26,8 +41,10 @@ def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None,
                 listfield_callback['checkbox'] = lambda attr, obj, context: '<input type="checkbox" name="selection" value="%s" />' % obj[make_selectable]
             else:
                 listfield_callback['checkbox'] = lambda attr, obj, context: '<input type="checkbox" name="selection" value="%s" />' % getattr(obj, make_selectable)
+
     if make_editable is not False:
         listfield_callback[1] = lambda attr, obj, context: '<a href="%s">%s</a>' % (reverse(make_editable, kwargs=obj.__dict__), display_attribute(obj, attr))
+
     # id="pageTable" for ajax
     if not instance:
         instance = DataTableMako(classes=classes, wrapper=wrapper)
