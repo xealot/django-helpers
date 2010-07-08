@@ -6,13 +6,15 @@ from functools import partial
 
 from ..utilities import get_query_string
 from ..template.templatetags import display_attribute
-from plugins import DTUnicode, DTHtmlTable, DTWrapper, DTSelectable, DTCallback
+
+from base import BaseDictTable
+from plugins import xmlstring, DTUnicode, DTHtmlTable, DTWrapper, DTSelectable, DTCallback
 
 def table2(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
     plugins = [DTUnicode, DTHtmlTable]
     #Give table appropriate CSS classes
     if listfield_callback:
-        plugins.append(DTCallback(listfield_callback))
+        plugins.insert(0, DTCallback(listfield_callback))
 
     if not classes:
         classes = ['zebra', 'records', 'paging']
@@ -23,7 +25,8 @@ def table2(context, queryset, fields=(), exclude=(), classes=(), record_url=None
         plugins.append(DTWrapper(style='width: 100%;'))
     if make_selectable is True:
         plugins.append(DTSelectable)
-    
+    table = BaseDictTable(plugins=plugins)
+    return xmlstring(table.build(queryset))
 
 def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
     listfield_callback = listfield_callback or {}

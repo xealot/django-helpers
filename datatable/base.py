@@ -1,4 +1,3 @@
-"""
 from datetime import datetime, date
 from django.forms.forms import pretty_name
 from django.utils.safestring import SafeUnicode, mark_safe
@@ -8,7 +7,7 @@ from ..template.templatetags import general_formatter
 from ..general import get_default_fields
 from django.template.defaultfilters import slugify
 from django.utils.encoding import force_unicode
-"""
+
 
 from plugins import *
 

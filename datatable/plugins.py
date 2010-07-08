@@ -6,6 +6,10 @@ from lxml.html import builder as E
 from django.utils.encoding import force_unicode
 
 
+def xmlstring(xmltable, method='xml', encoding=unicode, pretty_print=False):
+    return etree.tostring(xmltable, method=method, encoding=encoding, pretty_print=pretty_print)
+
+
 class DTPluginBase(object):
     REQUIRES = []
     def _get_classes_string(self, classes):
