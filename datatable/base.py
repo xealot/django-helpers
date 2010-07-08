@@ -9,9 +9,39 @@ from django.template.defaultfilters import slugify
 from django.utils.encoding import force_unicode
 
 
-from plugins import *
-
 class MissingPluginRequirementError(Exception): pass
+
+class DTPluginBase(object):
+    REQUIRES = []
+    def _get_classes_string(self, classes):
+        return classes and set(classes.split(' ')) or set()
+    
+    def _get_classes(self, element):
+        return self._get_classes_string(element.get('class', ''))
+    
+    def add_class_string(self, classes, new_classes=()):
+        newset = self._get_classes_string(classes)
+        newset.update(set(new_classes))
+        return ' '.join(newset)
+    
+    def add_class(self, element, classes=(), iterate=True):
+        if iterate and isinstance(element, (list,tuple)):
+            for e in element:
+                self.add_class(e, classes, iterate=False)
+            return element
+        else:
+            css = self._get_classes(element)
+            css.update(classes)
+            element.set('class', ' '.join(css))
+            return element
+        
+    def remove_class(self, element, classes=()):
+        css = self._get_classes(element)
+        css.difference(classes)
+        element.set('class', ' '.join(css))
+        return element
+
+
 class CallChain(object):
     """Type for keeping up with chain variable and adding pre and post elements"""
     def __init__(self, instance, initial, chain=None, *a, **kw):

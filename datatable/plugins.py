@@ -1,44 +1,13 @@
 """
 Data table plugins
 """
+from base import DTPluginBase
 from lxml import etree
 from lxml.html import builder as E
 from django.utils.encoding import force_unicode
 
-
 def xmlstring(xmltable, method='xml', encoding=unicode, pretty_print=False):
     return etree.tostring(xmltable, method=method, encoding=encoding, pretty_print=pretty_print)
-
-
-class DTPluginBase(object):
-    REQUIRES = []
-    def _get_classes_string(self, classes):
-        return classes and set(classes.split(' ')) or set()
-    
-    def _get_classes(self, element):
-        return self._get_classes_string(element.get('class', ''))
-    
-    def add_class_string(self, classes, new_classes=()):
-        newset = self._get_classes_string(classes)
-        newset.update(set(new_classes))
-        return ' '.join(newset)
-    
-    def add_class(self, element, classes=(), iterate=True):
-        if iterate and isinstance(element, (list,tuple)):
-            for e in element:
-                self.add_class(e, classes, iterate=False)
-            return element
-        else:
-            css = self._get_classes(element)
-            css.update(classes)
-            element.set('class', ' '.join(css))
-            return element
-        
-    def remove_class(self, element, classes=()):
-        css = self._get_classes(element)
-        css.difference(classes)
-        element.set('class', ' '.join(css))
-        return element
 
 
 class DTUnicode(DTPluginBase):
@@ -72,11 +41,14 @@ class DTHtmlTable(DTPluginBase):
 
 class DTWrapper(DTPluginBase):
     REQUIRES = [DTHtmlTable]
-    def __init__(self, **kwargs):
-        self.attrs = kwargs
+    def __init__(self, classes, **kwargs):
+        self.classes, self.attrs = classes, kwargs
 
     def finalize(self, callchain):
-        return E.TABLE(*callchain.chain, **self.attrs)
+        elem = E.TABLE(*callchain.chain, **self.attrs)
+        if self.classes:
+            self.add_class(elem, self.classes)
+        return elem
 
 
 class DTZebra(DTPluginBase):
