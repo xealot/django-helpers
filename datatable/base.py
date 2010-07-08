@@ -49,9 +49,10 @@ class BaseTable(object):
         chain = chain or initial
         for plugin in self._plugins:
             method = getattr(plugin, method_name, None)
+            chain_list = [chain]
             if method is not None and callable(method):
-                chain = method(self, initial, chain, *args, **kwargs)
-        return chain
+                chain = method(self, initial, chain, chain_list, *args, **kwargs)
+        return chain_list
 
     def head(self, initial, chain=None):
         """Called once before row iteration"""
@@ -138,7 +139,7 @@ class BaseDictTable(BaseTable):
             for key, col in row.items():
                 cells.append(self.cell(col, data=row, row_number=row_number, column_index=key))
             try: 
-                body_data.extend(list(chain(self.row(cells, row_number=row_number))))
+                body_data.append(self.row(cells, row_number=row_number))
             except StopIteration:
                 break
         return body_data
@@ -176,22 +177,22 @@ class DTPluginBase(object):
 
 
 class DTHtmlTable(DTPluginBase):
-    def head(self, instance, initial, chain):
+    def head(self, instance, initial, chain, chain_list):
         return E.THEAD(*initial)
     
-    def header(self, instance, initial, chain, column_index):
+    def header(self, instance, initial, chain, chain_list, column_index):
         return E.TH(str(initial))
 
-    def body(self, instance, initial, chain):
+    def body(self, instance, initial, chain, chain_list):
         return E.TBODY(*initial)
     
-    def row(self, instance, initial, chain, row_number):
-        return [E.TR(*initial)]
+    def row(self, instance, initial, chain, chain_list, row_number):
+        return E.TR(*initial)
     
-    def cell(self, instance, initial, chain, data, row_number, column_index):
+    def cell(self, instance, initial, chain, chain_list, data, row_number, column_index):
         return E.TD(str(initial))
 
-    def finalize(self, instance, initial, chain):
+    def finalize(self, instance, initial, chain, chain_list):
         return E.TABLE(*chain)
 
 
@@ -200,7 +201,7 @@ class DTWrapper(DTPluginBase):
     def __init__(self, **kwargs):
         self.attrs = kwargs
 
-    def finalize(self, instance, initial, chain):
+    def finalize(self, instance, initial, chain, chain_list):
         return E.TABLE(*chain, **self.attrs)
 
 
@@ -209,14 +210,14 @@ class DTZebra(DTPluginBase):
     def __init__(self, odd='odd', even='even'):
         self.odd, self.even = odd, even
         
-    def row(self, instance, initial, chain, row_number):
+    def row(self, instance, initial, chain, chain_list, row_number):
         return self.add_class(chain, row_number % 2 == 0 and [self.odd] or [self.even])
 
 
 class DTJsSort(DTPluginBase):
     REQUIRES = [DTHtmlTable]
     """This class adds javascript sorting to the table headers and tag."""
-    def finalize(self, instance, initial, chain):
+    def finalize(self, instance, initial, chain, chain_list):
         return self.add_class(chain, ['sortable'])
 
 
@@ -225,7 +226,7 @@ class DTRowLimit(DTPluginBase):
     def __init__(self, limit):
         self.limit = limit
     
-    def row(self, instance, initial, chain, row_number):
+    def row(self, instance, initial, chain, chain_list, row_number):
         if row_number > self.limit:
             raise StopIteration()
         return chain
@@ -234,7 +235,7 @@ class DTRowLimit(DTPluginBase):
 class DTSpecialFooter(DTPluginBase):
     REQUIRES = [DTHtmlTable]
     """This class adds a super footer to the table"""
-    def footer(self, instance, initial, chain):
+    def footer(self, instance, initial, chain, chain_list):
         return E.TFOOT()
 
 
@@ -244,7 +245,7 @@ class DTGroupBy(DTPluginBase):
     def __init__(self):
         pass
     
-    def row(self, instance, initial, chain, row_number):
+    def row(self, instance, initial, chain, chain_list, row_number):
         first_row = chain[0]
         colspan = str(len(first_row))
         groupby = E.TR(E.TD('GROUP', E.CLASS(self.add_class_string(first_row.get('class'), ['group'])), colspan=colspan))
@@ -256,7 +257,7 @@ class DTCallback(DTPluginBase):
     def __init__(self, callbacks):
         self.callbacks = callbacks
     
-    def cell(self, instance, initial, chain, data, row_number, column_index):
+    def cell(self, instance, initial, chain, chain_list, data, row_number, column_index):
         if column_index in self.callbacks:
             callback = self.callbacks[column_index]
             chain.text = callback(column_index, data)
@@ -265,8 +266,10 @@ class DTCallback(DTPluginBase):
 
 callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
 #bt = BaseDictTable(include_header=False, plugins=(DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
-bt = BaseDictTable(plugins=(DTHtmlTable,))
-print bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
+bt = BaseDictTable(plugins=(DTHtmlTable, ))
+by = BaseDictTable()
+print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
+print by.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
 
 
 
