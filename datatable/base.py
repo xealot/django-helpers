@@ -28,8 +28,8 @@ class CallChain(object):
 
 
 class BaseTable(object):
-    def __init__(self, include_header=True, include_footer=True, plugins=()):
-        self.include_header, self.include_footer = include_header, include_footer
+    def __init__(self, include_header=True, include_body=True, include_footer=True, plugins=()):
+        self.include_header, self.include_body, self.include_footer = include_header, include_body, include_footer
         self._plugin_classes = []
         self._plugins = []
         for plugin in plugins:
@@ -111,7 +111,8 @@ class BaseDictTable(BaseTable):
             if hdrs is not None:
                 xmllist.extend(self.head(hdrs))
         
-        xmllist.extend(self.body(self.build_body(data))) #Process Body
+        if self.include_body:
+            xmllist.extend(self.body(self.build_body(data))) #Process Body
         
         #Optional Footer
         if self.include_footer:
