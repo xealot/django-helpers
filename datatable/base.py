@@ -16,6 +16,20 @@ from lxml.html import builder as E
 from django.utils.encoding import force_unicode
 
 class MissingPluginRequirementError(Exception): pass
+class CallChain(object):
+    """Type for keeping up with chain variable and adding pre and post elements"""
+    def __init__(self, chain, *a, **kw):
+        self.chain, self.prefix, self.suffix = chain, [], []
+        
+    def pre(self, *args):
+        self.prefix.extend(args)
+
+    def post(self, *args):
+        self.suffix.extend(args)
+        
+    def get_list(self):
+        return self.prefix + [self.chain] + self.suffix
+
 
 class BaseTable(object):
     def __init__(self, include_header=True, include_footer=True, plugins=()):
@@ -48,13 +62,12 @@ class BaseTable(object):
 
     def call_chain(self, method_name, initial=None, chain=None, *args, **kwargs):
         chain = chain or initial
-        chain_list = [chain]
+        callchain = CallChain(chain)
         for plugin in self._plugins:
-            #print plugin, method_name, getattr(plugin, method_name, None)
             method = getattr(plugin, method_name, None)
             if method is not None and callable(method):
-                chain = method(self, initial, chain, chain_list, *args, **kwargs)
-        return chain_list
+                callchain.chain = method(self, initial, callchain.chain, callchain, *args, **kwargs)
+        return callchain.get_list()
 
     def head(self, initial, chain=None):
         """Called once before row iteration"""
@@ -179,13 +192,12 @@ class DTPluginBase(object):
 
 
 class DTUnicode(DTPluginBase):
-    def _unicode_list(self, instance, initial, chain, chain_list, *args, **kwargs):
-        print initial, map(force_unicode, initial)
-        return map(force_unicode, initial)
+    def header(self, instance, initial, chain, chain_list, column_index):
+        return force_unicode(initial)
 
-    def __getattr__(self, name):
-        return self._unicode_list
-    
+    def cell(self, instance, initial, chain, chain_list, data, row_number, column_index):
+        return force_unicode(initial)
+
 
 class DTHtmlTable(DTPluginBase):
     REQUIRES = [DTUnicode]
@@ -193,7 +205,7 @@ class DTHtmlTable(DTPluginBase):
         return E.THEAD(*initial)
     
     def header(self, instance, initial, chain, chain_list, column_index):
-        return E.TH(str(initial))
+        return E.TH(initial)
 
     def body(self, instance, initial, chain, chain_list):
         return E.TBODY(*initial)
@@ -202,7 +214,7 @@ class DTHtmlTable(DTPluginBase):
         return E.TR(*initial)
     
     def cell(self, instance, initial, chain, chain_list, data, row_number, column_index):
-        return E.TD(str(initial))
+        return E.TD(initial)
 
     def finalize(self, instance, initial, chain, chain_list):
         return E.TABLE(*chain)
