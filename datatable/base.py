@@ -111,15 +111,15 @@ class BaseDictTable(BaseTable):
         if self.include_header:
             hdrs = self.build_headers(data)
             if hdrs is not None:
-                xmllist.append(self.head(hdrs))
+                xmllist.extend(self.head(hdrs))
         
-        xmllist.append(self.body(self.build_body(data))) #Process Body
+        xmllist.extend(self.body(self.build_body(data))) #Process Body
         
         #Optional Footer
         if self.include_footer:
             ftrs = self.build_footer(data)
             if ftrs is not None:
-                xmllist.append(self.footer(ftrs))
+                xmllist.extend(self.footer(ftrs))
 
         value = self.finalize(xmllist)
         return value
@@ -152,9 +152,9 @@ class BaseDictTable(BaseTable):
             row_number+=1
             cells = []
             for key, col in row.items():
-                cells.append(self.cell(col, data=row, row_number=row_number, column_index=key))
+                cells.extend(self.cell(col, data=row, row_number=row_number, column_index=key))
             try: 
-                body_data.append(self.row(cells, row_number=row_number))
+                body_data.extend(self.row(cells, row_number=row_number))
             except StopIteration:
                 break
         return body_data
@@ -291,8 +291,8 @@ class DTCallback(DTPluginBase):
 callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
 #bt = BaseDictTable(include_header=False, plugins=(DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
 bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, ))
-by = BaseDictTable()
-print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
+by = BaseDictTable(plugins=(DTUnicode,))
+#print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
 print by.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
 
 
