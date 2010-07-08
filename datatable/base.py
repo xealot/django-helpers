@@ -160,8 +160,11 @@ class DTHtmlTable(DTPluginBase):
 
 class DTWrapper(DTPluginBase):
     REQUIRES = [DTHtmlTable]
+    def __init__(self, **kwargs):
+        self.attrs = kwargs
+
     def finalize(self, instance, initial, chain):
-        return E.TABLE(*chain)
+        return E.TABLE(*chain, **self.attrs)
 
 
 class DTZebra(DTPluginBase):
@@ -215,7 +218,7 @@ class DTGroupBy(DTPluginBase):
         return [groupby] + chain
 
 
-class DTRenderCallback(DTPluginBase):
+class DTCallback(DTPluginBase):
     """This class executes a callback for fields that require it."""
     def __init__(self, callbacks):
         self.callbacks = callbacks
@@ -228,7 +231,7 @@ class DTRenderCallback(DTPluginBase):
         
 
 callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
-bt = BaseDictTable(include_header=False, plugins=(DTHtmlTable, DTWrapper, DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTRenderCallback(callbacks)))
+bt = BaseDictTable(include_header=False, plugins=(DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
 bt.build([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
 
 
