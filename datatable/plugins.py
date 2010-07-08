@@ -60,7 +60,7 @@ class DTHtmlTable(DTPluginBase):
     def body(self, callchain):
         return E.TBODY(*callchain.chain)
     
-    def row(self, callchain, row_number):
+    def row(self, callchain, data, row_number):
         return E.TR(*callchain.chain)
     
     def cell(self, callchain, data, row_number, column_index):
@@ -84,7 +84,7 @@ class DTZebra(DTPluginBase):
     def __init__(self, odd='odd', even='even'):
         self.odd, self.even = odd, even
         
-    def row(self, callchain, row_number):
+    def row(self, callchain, data, row_number):
         return self.add_class(callchain.chain, row_number % 2 == 0 and [self.odd] or [self.even])
 
 
@@ -100,7 +100,7 @@ class DTRowLimit(DTPluginBase):
     def __init__(self, limit):
         self.limit = limit
     
-    def row(self, callchain, row_number):
+    def row(self, callchain, data, row_number):
         if row_number > self.limit:
             raise StopIteration()
 
@@ -118,7 +118,7 @@ class DTGroupBy(DTPluginBase):
     def __init__(self):
         pass
     
-    def row(self, callchain, row_number):
+    def row(self, callchain, data, row_number):
         colspan = str(len(callchain.chain))
         groupby = E.TR(E.TD('GROUP', E.CLASS(self.add_class_string(callchain.chain.get('class'), ['group'])), colspan=colspan))
         callchain.pre(groupby)
@@ -137,8 +137,8 @@ class DTCallback(DTPluginBase):
 
 class DTSelectable(DTPluginBase):
     REQUIRES = [DTHtmlTable]
-    def __init__(self, index=0):
-        self.index = index
+    def __init__(self, attribute, checkbox_name='selection', index=0):
+        self.attribute, self.checkbox_name, self.index = attribute, checkbox_name, index
 
     def finalize(self, callchain):
         self.add_class(callchain.chain, ['selectable'])
@@ -146,9 +146,21 @@ class DTSelectable(DTPluginBase):
     def head(self, callchain):
         callchain.chain.insert(self.index, E.TH(width='1'))
 
-    def row(self, callchain, row_number):
-        callchain.chain.insert(self.index, E.TD(E.INPUT(type='checkbox', name='selection', value='')))
+    def row(self, callchain, data, row_number):
+        callchain.chain.insert(self.index, E.TD(E.INPUT(type='checkbox', name=self.checkbox_name, value=callchain.instance.get_data(data, self.attribute))))
     
+
+class DTRowFormatter(DTPluginBase):
+    REQUIRES = [DTHtmlTable]
+    def __init__(self, test=lambda row_number: False, style=None, css=None):
+        self.test, self.style, self.css = test, style, css
+
+    def row(self, callchain, data, row_number):
+        if self.test(row_number):
+            self.add_class(callchain.chain, [])
+
+
+
 
 
 
