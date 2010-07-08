@@ -147,12 +147,15 @@ class BaseTable(object):
 class BaseDictTable(BaseTable):
     def prepare_columns(self, data, columns, exclude):
         if columns:
-            if isinstance(columns[0], basestring):
-                new_columns = [(c, c) for c in columns]
-            else:
-                new_columns = [c for c in columns]
+            # When columns are specified, only use them as specified.
+            new_columns = []
+            for column in columns:
+                if isinstance(column, basestring):
+                    new_columns.append([column, column])
+                else:
+                    new_columns.append(column)
             return new_columns
-        if data:
+        elif data:
             return [(k, k) for k in data[0].keys()]
 
     def get_data(self, row_data, column_name):
