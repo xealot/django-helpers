@@ -179,12 +179,12 @@ class DTPluginBase(object):
 
 
 class DTUnicode(DTPluginBase):
-    def _unicode_list(self, list):
-        return map(force_unicode, list)
+    def _unicode_list(self, instance, initial, chain, chain_list, *args, **kwargs):
+        print initial, map(force_unicode, initial)
+        return map(force_unicode, initial)
 
-    def __getatttr__(self, name):
-        print name
-        return lambda instance, initial, chain, *a, **kw: self._unicode_list(initial)
+    def __getattr__(self, name):
+        return self._unicode_list
     
 
 class DTHtmlTable(DTPluginBase):
