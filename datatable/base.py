@@ -1,3 +1,4 @@
+"""
 from datetime import datetime, date
 from django.forms.forms import pretty_name
 from django.utils.safestring import SafeUnicode, mark_safe
@@ -7,6 +8,116 @@ from ..template.templatetags import general_formatter
 from ..general import get_default_fields
 from django.template.defaultfilters import slugify
 from django.utils.encoding import force_unicode
+"""
+
+from lxml import etree
+from lxml.html import builder as E
+
+
+class BasePluginTable(object):
+    def __init__(self, *plugins):
+        self._plugins = []
+        for plugin in plugins:
+            self.add_plugin(plugin)
+
+    def add_plugin(self, plugin_class):
+        self._plugins.append(plugin_class())
+
+    def call_chain(self, method_name, value=None, *args, **kwargs):
+        for plugin in self._plugins:
+            method = getattr(plugin, method_name, None)
+            if method is not None and callable(method):
+                value = method(self, value, *args, **kwargs)
+        return value
+
+
+class BaseTable(BasePluginTable):
+    def build(self, data):
+        """Accepts any iterable"""
+        xmllist, row_number = [], 0
+        headers = self.get_headers(data)
+        xmllist.append(self.head(headers))
+        for row in data:
+            row_number+=1
+            xmllist.append(self.row(row, row_number))
+        value = self.finalize(xmllist)
+        print(etree.tostring(value, pretty_print=True))
+    
+    def get_headers(self, initial, value=None):
+        """Fixes data for magic"""
+        return self.call_chain('get_headers', initial, value)
+    
+    def head(self, value):
+        """Called once before row iteration"""
+        return self.call_chain('head', value)
+    
+    def row(self, value, row_number=0):
+        """Called for each row"""
+        return self.call_chain('row', value, row_number)
+
+    def cell(self, value, row_number=0, column_index=0):
+        """Called on each piece of data added into the table"""
+        pass
+    
+    def finalize(self, value):
+        """Close Table"""
+        return self.call_chain('finalize', value)
+
+
+class DTPluginBase(object):
+    def _get_classes(self, element):
+        css = element.get('class', '')
+        if css:
+            return set(css.split(' '))
+        return set()
+    
+    def add_class(self, element, classes=()):
+        css = self._get_classes(element)
+        css.update(classes)
+        element.set('class', ' '.join(css))
+        return element
+        
+    def remove_class(self, element, classes=()):
+        css = self._get_classes(element)
+        css.difference(classes)
+        element.set('class', ' '.join(css))
+        return element
+
+
+class DTHtmlTable(DTPluginBase):
+    def get_headers(self, instance, initial, value):
+        if initial:
+            return initial[0].keys()
+    
+    def head(self, instance, value):
+        headers = []
+        for header in value:
+            headers.append(E.TH(str(header)))
+        return E.THEAD(*headers)
+    
+    def row(self, instance, value, row_number):
+        return E.TR()
+    
+    def cell(self, instance, value):
+        return E.TD()
+    
+
+class DTWrapper(DTPluginBase):
+    def finalize(self, instance, value):
+        return E.TABLE(*value)
+
+
+class DTZebra(DTPluginBase):
+    def __init__(self, odd='odd', even='even'):
+        self.odd, self.even = odd, even
+        
+    def row(self, instance, value, row_number):
+        return self.add_class(value, row_number % 2 == 0 and [self.odd] or [self.even])
+
+
+bt = BaseTable(DTHtmlTable, DTWrapper, DTZebra)
+bt.build([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
+
 
 class DataTable(object):
     WIDGET_COL = u'<th class="{sorter:false}" width="1">'
