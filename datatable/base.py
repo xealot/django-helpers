@@ -13,6 +13,7 @@ from django.utils.encoding import force_unicode
 from itertools import chain
 from lxml import etree
 from lxml.html import builder as E
+from django.utils.encoding import force_unicode
 
 class MissingPluginRequirementError(Exception): pass
 
@@ -47,9 +48,10 @@ class BaseTable(object):
 
     def call_chain(self, method_name, initial=None, chain=None, *args, **kwargs):
         chain = chain or initial
+        chain_list = [chain]
         for plugin in self._plugins:
+            #print plugin, method_name, getattr(plugin, method_name, None)
             method = getattr(plugin, method_name, None)
-            chain_list = [chain]
             if method is not None and callable(method):
                 chain = method(self, initial, chain, chain_list, *args, **kwargs)
         return chain_list
@@ -117,7 +119,7 @@ class BaseDictTable(BaseTable):
     def build_headers(self, data):
         headers = []
         for header in self.get_headers(data):
-            headers.append(self.header(header, header))
+            headers.extend(self.header(header))
         return headers or None
     
     def build_footer(self, data):
@@ -176,7 +178,17 @@ class DTPluginBase(object):
         return element
 
 
+class DTUnicode(DTPluginBase):
+    def _unicode_list(self, list):
+        return map(force_unicode, list)
+
+    def __getatttr__(self, name):
+        print name
+        return lambda instance, initial, chain, *a, **kw: self._unicode_list(initial)
+    
+
 class DTHtmlTable(DTPluginBase):
+    REQUIRES = [DTUnicode]
     def head(self, instance, initial, chain, chain_list):
         return E.THEAD(*initial)
     
@@ -266,7 +278,7 @@ class DTCallback(DTPluginBase):
 
 callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
 #bt = BaseDictTable(include_header=False, plugins=(DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
-bt = BaseDictTable(plugins=(DTHtmlTable, ))
+bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, ))
 by = BaseDictTable()
 print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
 print by.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
