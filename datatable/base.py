@@ -64,6 +64,19 @@ class BaseTable(object):
             headers.extend(self.header(header))
         return headers or None
 
+    def build_body(self, data, columns):
+        body_data, row_number = [], 0
+        for model in data:
+            row_number += 1
+            cells = []
+            for field_name, field_label in columns:
+                cells.extend(self.cell(self.get_data(model, field_name), data=model, row_number=row_number, column_index=field_label))
+            try: 
+                body_data.extend(self.row(cells, data, row_number=row_number))
+            except StopIteration:
+                break
+        return body_data
+
     def build_footer(self, data):
         footer = self.footer(data)
         if data is footer[0]:
@@ -110,9 +123,9 @@ class BaseTable(object):
         """Called once before row iteration"""
         return self.call_chain('body', value)
     
-    def row(self, value, row_number=0):
+    def row(self, value, data=None, row_number=0):
         """Called for each row, always returns a list"""
-        return self.call_chain('row', value, row_number)
+        return self.call_chain('row', value, data, row_number)
 
     def cell(self, value, data=None, row_number=0, column_index=None):
         """Called on each piece of data added into the table"""
@@ -141,19 +154,9 @@ class BaseDictTable(BaseTable):
             return new_columns
         if data:
             return [(k, k) for k in data[0].keys()]
-            
-    def build_body(self, data, columns):
-        body_data, row_number = [], 0
-        for row in data:
-            row_number += 1
-            cells = []
-            for key, col in row.items():
-                cells.extend(self.cell(col, data=row, row_number=row_number, column_index=key))
-            try: 
-                body_data.extend(self.row(cells, row_number=row_number))
-            except StopIteration:
-                break
-        return body_data
+
+    def get_data(self, row_data, column_name):
+        return row_data[column_name]
 
 
 
@@ -161,8 +164,8 @@ class BaseDictTable(BaseTable):
 #from lxml.html import builder as E
 #from plugins import DTUnicode, DTHtmlTable, DTPluginBase
 
-bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, DTSelectable))
-print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='xml', encoding=unicode, pretty_print=True)
+#bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, DTSelectable))
+#print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='xml', encoding=unicode, pretty_print=True)
 
 
 
