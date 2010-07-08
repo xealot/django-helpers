@@ -5,12 +5,6 @@ from django.db.models import Count
 
 
 class ModelTable(BaseTable):
-    def build_headers(self, data, columns):
-        headers = []
-        for header in columns:
-            headers.extend(self.header(header))
-        return headers or None
-    
     def prepare_columns(self, queryset, columns, exclude):
         if columns:
             # When columns are specified, only use them as specified.

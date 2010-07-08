@@ -58,6 +58,12 @@ class BaseTable(object):
 
         return self.finalize(element_list)[0]
 
+    def build_headers(self, data, columns):
+        headers = []
+        for header in columns:
+            headers.extend(self.header(header))
+        return headers or None
+
     def build_footer(self, data):
         footer = self.footer(data)
         if data is footer[0]:
@@ -126,18 +132,11 @@ class BaseTable(object):
 
 
 class BaseDictTable(BaseTable):
-    def build_headers(self, data, columns, exclude):
-        headers = []
-        for header in self.get_headers(data):
-            headers.extend(self.header(header))
-        return headers or None
-    
-    def get_headers(self, initial):
-        if initial:
-            return [(k, k) for k in initial[0].keys()]
-        return ()
-    
-    def build_body(self, data):
+    def prepare_columns(self, data, columns, exclude):
+        if data:
+            return [(k, k) for k in data[0].keys()]
+            
+    def build_body(self, data, columns):
         body_data, row_number = [], 0
         for row in data:
             row_number+=1
@@ -156,8 +155,8 @@ class BaseDictTable(BaseTable):
 #from lxml.html import builder as E
 #from plugins import DTUnicode, DTHtmlTable, DTPluginBase
 
-#bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, DTSelectable))
-#print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='xml', encoding=unicode, pretty_print=True)
+bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, DTSelectable))
+print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='xml', encoding=unicode, pretty_print=True)
 
 
 
