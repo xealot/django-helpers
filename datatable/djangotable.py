@@ -6,9 +6,8 @@ from django.db.models import Count
 
 class ModelTable(BaseTable):
     def build_headers(self, data, columns):
-        print 'build_headers'
         headers = []
-        for header in self.get_headers(data, columns, exclude):
+        for header in columns:
             headers.extend(self.header(header))
         return headers or None
     
@@ -25,7 +24,7 @@ class ModelTable(BaseTable):
             if hasattr(queryset, 'model'):
                 return get_default_fields(queryset.model, (), exclude or None, include_verbose=True)
     
-    def build_body(self, data, columns, exclude):
+    def build_body(self, data, columns):
         body_data, row_number = [], 0
         for model in data:
             row_number += 1
