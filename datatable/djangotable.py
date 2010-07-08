@@ -8,10 +8,18 @@ class ModelTable(BaseTable):
     def prepare_columns(self, queryset, columns, exclude):
         if columns:
             # When columns are specified, only use them as specified.
-            if isinstance(columns[0], basestring):
-                new_columns = [(c, c) for c in columns]
-            else:
-                new_columns = [c for c in columns]
+            new_columns = []
+            for column in columns:
+                if isinstance(column, basestring):
+                    # Get labels for what we can.
+                    if queryset.model:
+                        f = queryset.model._meta.get_field(column)
+                        if f:
+                            new_columns.append([column, f.verbose_name.title()])
+                            continue
+                    new_columns.append([column, column])
+                else:
+                    new_columns.append(column)
             return new_columns
         else:
             # Columns not known, pull them from the model.
