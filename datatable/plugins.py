@@ -4,7 +4,11 @@ Data table plugins
 from lxml import etree
 from lxml.html import builder as E
 from django.utils.encoding import force_unicode
-from django.utils.encoding import force_unicode
+
+
+def xmlstring(xmltable, method='xml', encoding=unicode, pretty_print=False):
+    return etree.tostring(xmltable, method=method, encoding=encoding, pretty_print=pretty_print)
+
 
 class DTPluginBase(object):
     REQUIRES = []
@@ -129,6 +133,22 @@ class DTCallback(DTPluginBase):
         if column_index in self.callbacks:
             callback = self.callbacks[column_index]
             return callback(column_index, data)
+
+
+class DTSelectable(DTPluginBase):
+    REQUIRES = [DTHtmlTable]
+    def __init__(self, index=0):
+        self.index = index
+
+    def finalize(self, callchain):
+        self.add_class(callchain.chain, ['selectable'])
+
+    def head(self, callchain):
+        callchain.chain.insert(self.index, E.TH(width='1'))
+
+    def row(self, callchain, row_number):
+        callchain.chain.insert(self.index, E.TD(E.INPUT(type='checkbox', name='selection', value='')))
+    
 
 
 

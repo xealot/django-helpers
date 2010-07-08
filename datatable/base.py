@@ -1,4 +1,3 @@
-"""
 from datetime import datetime, date
 from django.forms.forms import pretty_name
 from django.utils.safestring import SafeUnicode, mark_safe
@@ -8,7 +7,7 @@ from ..template.templatetags import general_formatter
 from ..general import get_default_fields
 from django.template.defaultfilters import slugify
 from django.utils.encoding import force_unicode
-"""
+
 
 from plugins import *
 
@@ -42,14 +41,13 @@ class BaseTable(object):
         element_list = []
 
         #Process Headers
-        columns = self.prepare_columns(data, columns, exclude)
         if self.include_header:
-            hdrs = self.build_headers(data, columns)
+            hdrs = self.build_headers(data)
             if hdrs is not None:
                 element_list.extend(self.head(hdrs))
 
         if self.include_body:
-            element_list.extend(self.body(self.build_body(data, columns))) #Process Body
+            element_list.extend(self.body(self.build_body(data))) #Process Body
 
         #Optional Footer
         if self.include_footer:
@@ -67,7 +65,7 @@ class BaseTable(object):
 
     def output(self, data, columns=(), exclude=()):
         """Build and output data"""
-        return self.build(data, columns, exclude)
+        return self.build(data)
 
     def add_plugin(self, plugin):
         plugin = callable(plugin) and plugin() or plugin
@@ -127,7 +125,7 @@ class BaseTable(object):
 
 
 class BaseDictTable(BaseTable):
-    def build_headers(self, data, columns, exclude):
+    def build_headers(self, data):
         headers = []
         for header in self.get_headers(data):
             headers.extend(self.header(header))
@@ -135,7 +133,7 @@ class BaseDictTable(BaseTable):
     
     def get_headers(self, initial):
         if initial:
-            return [(k, k) for k in initial[0].keys()]
+            return initial[0].keys()
         return ()
     
     def build_body(self, data):
@@ -153,14 +151,12 @@ class BaseDictTable(BaseTable):
 
 
 
-        
+#from lxml import etree        
+#from lxml.html import builder as E
+#from plugins import DTUnicode, DTHtmlTable, DTPluginBase
 
-#callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
-#bt = BaseDictTable(include_header=False, plugins=(DTUnicode, DTCallback(callbacks), DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy))
-#bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, ))
-#by = BaseDictTable(plugins=(DTUnicode,))
-#print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
-#print by.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
+#bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, DTSelectable))
+#print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='xml', encoding=unicode, pretty_print=True)
 
 
 
