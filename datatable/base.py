@@ -27,7 +27,7 @@ class BaseTable(object):
         raise NotImplementedError()
 
     def add_plugin(self, plugin):
-        plugin = callable(plugin) and plugin()
+        plugin = callable(plugin) and plugin() or plugin
         plugin_class = plugin.__class__
         
         if hasattr(plugin_class, 'REQUIRES'):
@@ -79,9 +79,13 @@ class BaseDictTable(BaseTable):
             cells = []
             for key, col in row.items():
                 cells.append(self.cell(col, col, row_number, key))
-            row_data = self.row(cells, row_number)
-            xmllist.append(row_data)
+            try: 
+                xmllist.append(self.row(cells, row_number))
+            except StopIteration:
+                break
         value = self.finalize(xmllist)
+        
+        
         print(etree.tostring(value, pretty_print=True))
     
     def get_headers(self, initial):
@@ -131,13 +135,11 @@ class DTWrapper(DTPluginBase):
 
 
 class DTZebra(DTPluginBase):
+    REQUIRES = [DTHtmlTable]
     def __init__(self, odd='odd', even='even'):
         self.odd, self.even = odd, even
         
     def row(self, instance, value, row_number):
-        #print value
-        print 'value', value
-        #print value
         return self.add_class(value, row_number % 2 == 0 and [self.odd] or [self.even])
 
 
@@ -163,6 +165,26 @@ class DTRowLimit(DTPluginBase):
 
 bt = BaseDictTable(DTHtmlTable, DTWrapper, DTZebra, DTJsSort, DTRowLimit(1))
 bt.build([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class DataTable(object):
