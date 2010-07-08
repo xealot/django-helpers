@@ -117,11 +117,16 @@ class BaseDictTable(BaseTable):
 
 class DTPluginBase(object):
     REQUIRES = []
+    def _get_classes_string(self, classes):
+        return classes and set(classes.split(' ')) or set()
+    
     def _get_classes(self, element):
-        css = element.get('class', '')
-        if css:
-            return set(css.split(' '))
-        return set()
+        return self._get_classes_string(element.get('class', ''))
+    
+    def add_class_string(self, classes, new_classes=()):
+        newset = self._get_classes_string(classes)
+        newset.update(set(new_classes))
+        return ' '.join(newset)
     
     def add_class(self, element, classes=(), iterate=True):
         if iterate and isinstance(element, (list,tuple)):
@@ -200,7 +205,7 @@ class DTSpecialFooter(DTPluginBase):
     def foot(self, instance, initial, chain):
         return E.TFOOT()
 
-from copy import deepcopy
+
 class DTGroupBy(DTPluginBase):   
     """This class stops the table at a certain amount of rows"""
     def __init__(self):
@@ -208,13 +213,8 @@ class DTGroupBy(DTPluginBase):
     
     def row(self, instance, initial, chain, row_number):
         first_row = chain[0]
-        column_count = len(first_row)
-        old_classes = first_row.get('class').split(' ')
-        groupby = deepcopy(first_row)
-        groupby.clear()
-        self.add_class(groupby, ['group'] + old_classes)
-        groupby.set('colspan', str(column_count))
-        groupby.append(E.TD('GROUP'))
+        colspan = str(len(first_row))
+        groupby = E.TR(E.TD('GROUP', E.CLASS(self.add_class_string(first_row.get('class'), ['group'])), colspan=colspan))
         return [groupby] + chain
 
 
