@@ -10,6 +10,8 @@ from django.template.defaultfilters import slugify
 from django.utils.encoding import force_unicode
 """
 
+from plugins import *
+
 class MissingPluginRequirementError(Exception): pass
 class CallChain(object):
     """Type for keeping up with chain variable and adding pre and post elements"""
@@ -35,11 +37,34 @@ class BaseTable(object):
         for plugin in plugins:
             self.add_plugin(plugin)
 
-    def build(self, data):
-        """Method called to begin iteration of data"""
-        raise NotImplementedError()
+    def build(self, data, columns=(), exclude=()):
+        """Accepts any iterable with subscriptable access"""
+        element_list = []
 
-    def output(self, data):
+        #Process Headers
+        if self.include_header:
+            hdrs = self.build_headers(data)
+            if hdrs is not None:
+                element_list.extend(self.head(hdrs))
+
+        if self.include_body:
+            element_list.extend(self.body(self.build_body(data))) #Process Body
+
+        #Optional Footer
+        if self.include_footer:
+            ftrs = self.build_footer(data)
+            if ftrs is not None:
+                element_list.extend(self.footer(ftrs))
+
+        return self.finalize(element_list)[0]
+
+    def build_footer(self, data):
+        footer = self.footer(data)
+        if data is footer[0]:
+            return None
+        return footer
+
+    def output(self, data, columns=(), exclude=()):
         """Build and output data"""
         return self.build(data)
 
@@ -101,43 +126,11 @@ class BaseTable(object):
 
 
 class BaseDictTable(BaseTable):
-    def build(self, data):
-        """Accepts any iterable with subscriptable access"""
-        element_list = []
-        
-        #Process Headers
-        if self.include_header:
-            hdrs = self.build_headers(data)
-            if hdrs is not None:
-                element_list.extend(self.head(hdrs))
-        
-        if self.include_body:
-            element_list.extend(self.body(self.build_body(data))) #Process Body
-        
-        #Optional Footer
-        if self.include_footer:
-            ftrs = self.build_footer(data)
-            if ftrs is not None:
-                element_list.extend(self.footer(ftrs))
-
-        return self.finalize(element_list)[0]
-
-    def output(self, data):
-        """Build and output data"""
-        #return etree.tostring(self.build(data), method='html', encoding=unicode, pretty_print=True)
-        return self.build(data)
-    
     def build_headers(self, data):
         headers = []
         for header in self.get_headers(data):
             headers.extend(self.header(header))
         return headers or None
-    
-    def build_footer(self, data):
-        footer = self.footer(data)
-        if data is footer[0]:
-            return None
-        return footer
     
     def get_headers(self, initial):
         if initial:
