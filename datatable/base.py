@@ -103,24 +103,24 @@ class BaseTable(object):
 class BaseDictTable(BaseTable):
     def build(self, data):
         """Accepts any iterable with subscriptable access"""
-        xmllist = []
+        element_list = []
         
         #Process Headers
         if self.include_header:
             hdrs = self.build_headers(data)
             if hdrs is not None:
-                xmllist.extend(self.head(hdrs))
+                element_list.extend(self.head(hdrs))
         
         if self.include_body:
-            xmllist.extend(self.body(self.build_body(data))) #Process Body
+            element_list.extend(self.body(self.build_body(data))) #Process Body
         
         #Optional Footer
         if self.include_footer:
             ftrs = self.build_footer(data)
             if ftrs is not None:
-                xmllist.extend(self.footer(ftrs))
+                element_list.extend(self.footer(ftrs))
 
-        return self.finalize(xmllist)[0]
+        return self.finalize(element_list)[0]
 
     def output(self, data):
         """Build and output data"""
