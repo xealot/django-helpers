@@ -43,7 +43,7 @@ class DTPluginBase(object):
 
 class DTUnicode(DTPluginBase):
     def header(self, callchain, column_index):
-        callchain.chain = force_unicode(callchain.chain)
+        return force_unicode(callchain.chain)
 
     def cell(self, callchain, data, row_number, column_index):
         return force_unicode(callchain.chain)
