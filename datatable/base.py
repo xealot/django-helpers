@@ -72,7 +72,7 @@ class BaseTable(object):
             for field_name, field_label in columns:
                 cells.extend(self.cell(self.get_data(model, field_name), data=model, row_number=row_number, column_index=field_label))
             try: 
-                body_data.extend(self.row(cells, data, row_number=row_number))
+                body_data.extend(self.row(cells, model, row_number=row_number))
             except StopIteration:
                 break
         return body_data
