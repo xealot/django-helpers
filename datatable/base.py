@@ -24,8 +24,12 @@ class BaseTable(object):
             self.add_plugin(plugin)
 
     def build(self, data):
-        """Method called to being iteration of data"""
+        """Method called to begin iteration of data"""
         raise NotImplementedError()
+
+    def output(self, data):
+        """Build and output data"""
+        return self.build(data)
 
     def add_plugin(self, plugin):
         plugin = callable(plugin) and plugin() or plugin
@@ -88,7 +92,11 @@ class BaseDictTable(BaseTable):
         xmllist.append(self.body(self.build_body(data))) #Process Body
         xmllist.append(self.foot(data)) #Optional Footer
         value = self.finalize(xmllist)
-        print(etree.tostring(value, method='html', encoding=unicode, pretty_print=True))
+        return value
+
+    def output(self, data):
+        """Build and output data"""
+        return etree.tostring(self.build(data), method='html', encoding=unicode, pretty_print=True)
     
     def build_headers(self, data):
         headers = []
@@ -206,7 +214,8 @@ class DTSpecialFooter(DTPluginBase):
         return E.TFOOT()
 
 
-class DTGroupBy(DTPluginBase):   
+class DTGroupBy(DTPluginBase):  
+    REQUIRES = [DTHtmlTable] 
     """This class stops the table at a certain amount of rows"""
     def __init__(self):
         pass
@@ -232,7 +241,7 @@ class DTCallback(DTPluginBase):
 
 callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
 bt = BaseDictTable(include_header=False, plugins=(DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
-bt.build([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
+print bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
 
 
 
