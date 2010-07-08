@@ -55,7 +55,7 @@ class DTHtmlTable(DTPluginBase):
         return E.THEAD(*callchain.chain)
     
     def header(self, callchain, column_index):
-        return E.TH(callchain.initial[1])
+        return E.TH(callchain.chain)
 
     def body(self, callchain):
         return E.TBODY(*callchain.chain)
