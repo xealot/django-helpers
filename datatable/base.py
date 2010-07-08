@@ -121,8 +121,7 @@ class BaseDictTable(BaseTable):
             if ftrs is not None:
                 xmllist.extend(self.footer(ftrs))
 
-        value = self.finalize(xmllist)
-        return value
+        return self.finalize(xmllist)[0]
 
     def output(self, data):
         """Build and output data"""
@@ -136,8 +135,8 @@ class BaseDictTable(BaseTable):
         return headers or None
     
     def build_footer(self, data):
-        footer = self.foot(data)
-        if footer is data:
+        footer = self.footer(data)
+        if data is footer[0]:
             return None
         return footer
     
@@ -193,28 +192,28 @@ class DTPluginBase(object):
 
 class DTUnicode(DTPluginBase):
     def header(self, instance, initial, chain, chain_list, column_index):
-        return force_unicode(initial)
+        return force_unicode(chain)
 
     def cell(self, instance, initial, chain, chain_list, data, row_number, column_index):
-        return force_unicode(initial)
+        return force_unicode(chain)
 
 
 class DTHtmlTable(DTPluginBase):
     REQUIRES = [DTUnicode]
     def head(self, instance, initial, chain, chain_list):
-        return E.THEAD(*initial)
+        return E.THEAD(*chain)
     
     def header(self, instance, initial, chain, chain_list, column_index):
-        return E.TH(initial)
+        return E.TH(chain)
 
     def body(self, instance, initial, chain, chain_list):
-        return E.TBODY(*initial)
+        return E.TBODY(*chain)
     
     def row(self, instance, initial, chain, chain_list, row_number):
-        return E.TR(*initial)
+        return E.TR(*chain)
     
     def cell(self, instance, initial, chain, chain_list, data, row_number, column_index):
-        return E.TD(initial)
+        return E.TD(chain)
 
     def finalize(self, instance, initial, chain, chain_list):
         return E.TABLE(*chain)
@@ -273,7 +272,8 @@ class DTGroupBy(DTPluginBase):
         first_row = chain[0]
         colspan = str(len(first_row))
         groupby = E.TR(E.TD('GROUP', E.CLASS(self.add_class_string(first_row.get('class'), ['group'])), colspan=colspan))
-        return [groupby] + chain
+        chain_list.pre(groupby)
+        return chain
 
 
 class DTCallback(DTPluginBase):
@@ -289,10 +289,10 @@ class DTCallback(DTPluginBase):
         
 
 callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
-#bt = BaseDictTable(include_header=False, plugins=(DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
-bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, ))
+bt = BaseDictTable(include_header=False, plugins=(DTUnicode, DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
+#bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, ))
 by = BaseDictTable(plugins=(DTUnicode,))
-#print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
+print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
 print by.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
 
 
