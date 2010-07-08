@@ -131,4 +131,20 @@ class DTCallback(DTPluginBase):
             return callback(column_index, data)
 
 
+class DTSelectable(DTPluginBase):
+    REQUIRES = [DTHtmlTable]
+    def __init__(self, index=0):
+        self.index = index
+
+    def finalize(self, callchain):
+        self.add_class(callchain.chain, ['selectable'])
+
+    def head(self, callchain):
+        callchain.chain.insert(self.index, E.TH(width='1'))
+
+    def row(self, callchain, row_number):
+        callchain.chain.insert(self.index, E.TD(E.INPUT(type='checkbox', name='selection', value='')))
+    
+
+
 

@@ -159,21 +159,12 @@ class BaseDictTable(BaseTable):
 
 
 
-from lxml import etree        
-from plugins import DTUnicode, DTHtmlTable, DTPluginBase
+#from lxml import etree        
+#from lxml.html import builder as E
+#from plugins import DTUnicode, DTHtmlTable, DTPluginBase
 
-class DTZebra(DTPluginBase):
-    REQUIRES = [DTHtmlTable]
-    def __init__(self, index=0):
-        self.index = index
-
-    def cell(self, callchain, data, row_number, column_index):
-        pass
-
-
-
-bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, ))
-print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='html', encoding=unicode, pretty_print=True)
+#bt = BaseDictTable(plugins=(DTUnicode, DTHtmlTable, DTSelectable))
+#print etree.tostring(bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}]), method='xml', encoding=unicode, pretty_print=True)
 
 
 
