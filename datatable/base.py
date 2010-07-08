@@ -14,11 +14,15 @@ from lxml import etree
 from lxml.html import builder as E
 
 
-class BasePluginTable(object):
+class BaseTable(object):
     def __init__(self, *plugins):
         self._plugins = []
         for plugin in plugins:
             self.add_plugin(plugin)
+
+    def build(self, data):
+        """Method called to being iteration of data"""
+        raise NotImplementedError()
 
     def add_plugin(self, plugin_class):
         self._plugins.append(plugin_class())
@@ -31,7 +35,7 @@ class BasePluginTable(object):
         return value
 
 
-class BaseTable(BasePluginTable):
+class BaseDictTable(BaseTable):
     def build(self, data):
         """Accepts any iterable"""
         xmllist, row_number = [], 0
@@ -115,7 +119,7 @@ class DTZebra(DTPluginBase):
         return self.add_class(value, row_number % 2 == 0 and [self.odd] or [self.even])
 
 
-bt = BaseTable(DTHtmlTable, DTWrapper, DTZebra)
+bt = BaseDictTable(DTHtmlTable, DTWrapper, DTZebra)
 bt.build([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
 
 
