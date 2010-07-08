@@ -10,6 +10,7 @@ from django.template.defaultfilters import slugify
 from django.utils.encoding import force_unicode
 """
 
+from itertools import chain
 from lxml import etree
 from lxml.html import builder as E
 
@@ -72,6 +73,10 @@ class BaseTable(object):
         """Called on each piece of data added into the table"""
         return self.call_chain('cell', initial, chain, data, row_number, column_index)
 
+    def footer(self, initial, chain=None):
+        """Wrapping the foot calls"""
+        return self.call_chain('footer', initial, chain)
+
     def foot(self, initial, chain=None):
         """Called on each piece of data added into the table"""
         return self.call_chain('foot', initial, chain)
@@ -88,21 +93,37 @@ class BaseDictTable(BaseTable):
         
         #Process Headers
         if self.include_header:
-            xmllist.append(self.head(self.build_headers(data)))
+            hdrs = self.build_headers(data)
+            if hdrs is not None:
+                xmllist.append(self.head(hdrs))
+        
         xmllist.append(self.body(self.build_body(data))) #Process Body
-        xmllist.append(self.foot(data)) #Optional Footer
+        
+        #Optional Footer
+        if self.include_footer:
+            ftrs = self.build_footer(data)
+            if ftrs is not None:
+                xmllist.append(self.footer(ftrs))
+
         value = self.finalize(xmllist)
         return value
 
     def output(self, data):
         """Build and output data"""
-        return etree.tostring(self.build(data), method='html', encoding=unicode, pretty_print=True)
+        #return etree.tostring(self.build(data), method='html', encoding=unicode, pretty_print=True)
+        return self.build(data)
     
     def build_headers(self, data):
         headers = []
         for header in self.get_headers(data):
             headers.append(self.header(header, header))
-        return headers
+        return headers or None
+    
+    def build_footer(self, data):
+        footer = self.foot(data)
+        if footer is data:
+            return None
+        return footer
     
     def get_headers(self, initial):
         if initial:
@@ -117,7 +138,7 @@ class BaseDictTable(BaseTable):
             for key, col in row.items():
                 cells.append(self.cell(col, data=row, row_number=row_number, column_index=key))
             try: 
-                body_data.extend(self.row(cells, row_number=row_number))
+                body_data.extend(list(chain(self.row(cells, row_number=row_number))))
             except StopIteration:
                 break
         return body_data
@@ -169,7 +190,10 @@ class DTHtmlTable(DTPluginBase):
     
     def cell(self, instance, initial, chain, data, row_number, column_index):
         return E.TD(str(initial))
-    
+
+    def finalize(self, instance, initial, chain):
+        return E.TABLE(*chain)
+
 
 class DTWrapper(DTPluginBase):
     REQUIRES = [DTHtmlTable]
@@ -210,7 +234,7 @@ class DTRowLimit(DTPluginBase):
 class DTSpecialFooter(DTPluginBase):
     REQUIRES = [DTHtmlTable]
     """This class adds a super footer to the table"""
-    def foot(self, instance, initial, chain):
+    def footer(self, instance, initial, chain):
         return E.TFOOT()
 
 
@@ -240,7 +264,8 @@ class DTCallback(DTPluginBase):
         
 
 callbacks = {'one': lambda column, data: column+' hooooo '+ str(data[column])}
-bt = BaseDictTable(include_header=False, plugins=(DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
+#bt = BaseDictTable(include_header=False, plugins=(DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter, DTGroupBy, DTCallback(callbacks)))
+bt = BaseDictTable(plugins=(DTHtmlTable,))
 print bt.output([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
 
 
