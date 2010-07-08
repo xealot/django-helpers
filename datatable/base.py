@@ -13,10 +13,12 @@ from django.utils.encoding import force_unicode
 from lxml import etree
 from lxml.html import builder as E
 
+class MissingPluginRequirementError(Exception): pass
 
 class BaseTable(object):
     def __init__(self, *plugins):
-        self._plugins = []
+        self._plugin_classes = set()
+        self._plugins = set()
         for plugin in plugins:
             self.add_plugin(plugin)
 
@@ -24,8 +26,17 @@ class BaseTable(object):
         """Method called to being iteration of data"""
         raise NotImplementedError()
 
-    def add_plugin(self, plugin_class):
-        self._plugins.append(plugin_class())
+    def add_plugin(self, plugin):
+        plugin = callable(plugin) and plugin()
+        plugin_class = plugin.__class__
+        
+        if hasattr(plugin_class, 'REQUIRES'):
+            reqs = set(plugin_class.REQUIRES)
+            if not self._plugin_classes.issuperset(reqs):
+                raise MissingPluginRequirementError(','.join([str(p.__name__) for p in reqs.difference(self._plugin_classes)]))
+        
+        self._plugin_classes.add(plugin_class)
+        self._plugins.add(plugin)
 
     def call_chain(self, method_name, value=None, *args, **kwargs):
         for plugin in self._plugins:
@@ -34,41 +45,53 @@ class BaseTable(object):
                 value = method(self, value, *args, **kwargs)
         return value
 
-
-class BaseDictTable(BaseTable):
-    def build(self, data):
-        """Accepts any iterable"""
-        xmllist, row_number = [], 0
-        headers = self.get_headers(data)
-        xmllist.append(self.head(headers))
-        for row in data:
-            row_number+=1
-            xmllist.append(self.row(row, row_number))
-        value = self.finalize(xmllist)
-        print(etree.tostring(value, pretty_print=True))
-    
-    def get_headers(self, initial, value=None):
-        """Fixes data for magic"""
-        return self.call_chain('get_headers', initial, value)
-    
     def head(self, value):
         """Called once before row iteration"""
         return self.call_chain('head', value)
+
+    def header(self, value, initial, column_index=None):
+        """Called for every header"""
+        return self.call_chain('header', value, initial, column_index=None)
     
     def row(self, value, row_number=0):
         """Called for each row"""
         return self.call_chain('row', value, row_number)
 
-    def cell(self, value, row_number=0, column_index=0):
+    def cell(self, value, initial, row_number=0, column_index=None):
         """Called on each piece of data added into the table"""
-        pass
+        return self.call_chain('cell', initial, value, row_number, column_index)
     
     def finalize(self, value):
         """Close Table"""
         return self.call_chain('finalize', value)
 
 
+class BaseDictTable(BaseTable):
+    def build(self, data):
+        """Accepts any iterable with subscriptable access"""
+        xmllist, row_number = [], 0
+        headers = []
+        for header in self.get_headers(data):
+            headers.append(self.header(header, header))
+        xmllist.append(self.head(headers))
+        for row in data:
+            row_number+=1
+            cells = []
+            for key, col in row.items():
+                cells.append(self.cell(col, col, row_number, key))
+            row_data = self.row(cells, row_number)
+            xmllist.append(row_data)
+        value = self.finalize(xmllist)
+        print(etree.tostring(value, pretty_print=True))
+    
+    def get_headers(self, initial):
+        if initial:
+            return initial[0].keys()
+        return ()
+
+
 class DTPluginBase(object):
+    REQUIRES = []
     def _get_classes(self, element):
         css = element.get('class', '')
         if css:
@@ -89,21 +112,17 @@ class DTPluginBase(object):
 
 
 class DTHtmlTable(DTPluginBase):
-    def get_headers(self, instance, initial, value):
-        if initial:
-            return initial[0].keys()
-    
     def head(self, instance, value):
-        headers = []
-        for header in value:
-            headers.append(E.TH(str(header)))
-        return E.THEAD(*headers)
+        return E.THEAD(*value)
+    
+    def header(self, instance, value, initial, column_index):
+        return E.TH(str(initial))
     
     def row(self, instance, value, row_number):
-        return E.TR()
+        return E.TR(*value)
     
-    def cell(self, instance, value):
-        return E.TD()
+    def cell(self, instance, initial, value, row_number, column_index):
+        return E.TD(str(initial))
     
 
 class DTWrapper(DTPluginBase):
@@ -116,10 +135,33 @@ class DTZebra(DTPluginBase):
         self.odd, self.even = odd, even
         
     def row(self, instance, value, row_number):
+        #print value
+        print 'value', value
+        #print value
         return self.add_class(value, row_number % 2 == 0 and [self.odd] or [self.even])
 
 
-bt = BaseDictTable(DTHtmlTable, DTWrapper, DTZebra)
+class DTJsSort(DTPluginBase):
+    """This class adds javascript sorting to the table headers and tag."""
+    def finalize(self, instance, value):
+        return self.add_class(value, ['sortable'])
+
+
+class DTRowLimit(DTPluginBase):
+    """This class stops the table at a certain amount of rows"""
+    def __init__(self, limit):
+        self.limit = limit
+    
+    def row(self, instance, value, row_number):
+        if row_number > self.limit:
+            raise StopIteration()
+        return value
+
+
+
+        
+
+bt = BaseDictTable(DTHtmlTable, DTWrapper, DTZebra, DTJsSort, DTRowLimit(1))
 bt.build([{'one': 1, 'two': 2},{'one': 2, 'two': 3}])
 
 
