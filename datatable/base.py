@@ -133,13 +133,19 @@ class BaseTable(object):
 
 class BaseDictTable(BaseTable):
     def prepare_columns(self, data, columns, exclude):
+        if columns:
+            if isinstance(columns[0], basestring):
+                new_columns = [(c, c) for c in columns]
+            else:
+                new_columns = [c for c in columns]
+            return new_columns
         if data:
             return [(k, k) for k in data[0].keys()]
             
     def build_body(self, data, columns):
         body_data, row_number = [], 0
         for row in data:
-            row_number+=1
+            row_number += 1
             cells = []
             for key, col in row.items():
                 cells.extend(self.cell(col, data=row, row_number=row_number, column_index=key))
