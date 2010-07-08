@@ -61,7 +61,7 @@ class BaseTable(object):
     def build_headers(self, data, columns):
         headers = []
         for header in columns:
-            headers.extend(self.header(header))
+            headers.extend(self.header(header[1]))
         return headers or None
 
     def build_body(self, data, columns):
