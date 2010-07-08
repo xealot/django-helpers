@@ -1,19 +1,31 @@
 from base import BaseTable
 from plugins import *
+from ..general import get_default_fields
+from django.db.models import Count
+
 
 class ModelTable(BaseTable):
-    def build_headers(self, data):
+    def build_headers(self, data, columns):
+        print 'build_headers'
         headers = []
-        for header in self.get_headers(data):
+        for header in self.get_headers(data, columns, exclude):
             headers.extend(self.header(header))
         return headers or None
     
-    def get_headers(self, initial):
-        if initial:
-            return initial[0].keys()
-        return ()
+    def prepare_columns(self, queryset, columns, exclude):
+        if columns:
+            # When columns are specified, only use them as specified.
+            if len(columns[0]) == 1:
+                new_columns = [(c, c) for c in columns]
+            else:
+                new_columns = [c for c in columns]
+            return new_columns
+        else:
+            # Columns not known, pull them from the model.
+            if hasattr(queryset, 'model'):
+                return get_default_fields(queryset.model, (), exclude or None, include_verbose=True)
     
-    def build_body(self, data):
+    def build_body(self, data, columns, exclude):
         body_data, row_number = [], 0
         for model in data:
             row_number += 1
@@ -28,7 +40,7 @@ class ModelTable(BaseTable):
         
 
 from stocks.models import AmexIndex
-qs = AmexIndex.objects.all()[:5]
+qs = AmexIndex.objects.annotate(num_entries=Count('id')).all()[:5]
 
-bt = ModelTable(include_header=False, plugins=(DTUnicode, DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter))
+bt = ModelTable(include_header=True, plugins=(DTUnicode, DTHtmlTable, DTWrapper(style='width: 100%;'), DTZebra, DTJsSort, DTSpecialFooter))
 print etree.tostring(bt.output(qs), method='html', encoding=unicode, pretty_print=True)
