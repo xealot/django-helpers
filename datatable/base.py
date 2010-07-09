@@ -14,14 +14,14 @@ class MissingPluginRequirementError(Exception): pass
 class DTPluginBase(object):
     REQUIRES = []
     def _get_classes_string(self, classes):
-        return classes and set(classes.split(' ')) or set()
+        return classes and classes.split(' ') or []
     
     def _get_classes(self, element):
         return self._get_classes_string(element.get('class', ''))
     
     def add_class_string(self, classes, new_classes=()):
         newset = self._get_classes_string(classes)
-        newset.update(set(new_classes))
+        newset.extend(new_classes)
         return ' '.join(newset)
     
     def add_class(self, element, classes=(), iterate=True):
@@ -31,7 +31,7 @@ class DTPluginBase(object):
             return element
         else:
             css = self._get_classes(element)
-            css.update(classes)
+            css.extend(classes)
             element.set('class', ' '.join(css))
             return element
         
@@ -59,8 +59,8 @@ class CallChain(object):
 
 
 class BaseTable(object):
-    def __init__(self, include_header=True, include_body=True, include_footer=True, plugins=()):
-        self.include_header, self.include_body, self.include_footer = include_header, include_body, include_footer
+    def __init__(self, include_header=True, include_body=True, include_footer=True, finalize=True, plugins=()):
+        self.include_header, self.include_body, self.include_footer, self.do_finalize = include_header, include_body, include_footer, finalize
         self._plugin_classes = []
         self._plugins = []
         for plugin in plugins:
@@ -86,7 +86,9 @@ class BaseTable(object):
             if ftrs is not None:
                 element_list.extend(self.footer(ftrs))
 
-        return self.finalize(element_list)[0]
+        if self.do_finalize:
+            return self.finalize(element_list)[0]
+        return element_list
 
     def build_headers(self, data, columns):
         headers = []
@@ -99,8 +101,10 @@ class BaseTable(object):
         for model in data:
             row_number += 1
             cells = []
+            col_number = 0
             for field_name, field_label in columns:
-                cells.extend(self.cell(self.get_data(model, field_name), data=model, row_number=row_number, column_index=field_label))
+                col_number += 1
+                cells.extend(self.cell(self.get_data(model, field_name), data=model, column_index=col_number, column_name=field_name, row_number=row_number))
             try: 
                 body_data.extend(self.row(cells, model, row_number=row_number))
             except StopIteration:
@@ -108,7 +112,7 @@ class BaseTable(object):
         return body_data
 
     def build_footer(self, data):
-        footer = self.footer(data)
+        footer = self.foot(data)
         if data is footer[0]:
             return None
         return footer
@@ -157,16 +161,16 @@ class BaseTable(object):
         """Called for each row, always returns a list"""
         return self.call_chain('row', value, data, row_number)
 
-    def cell(self, value, data=None, row_number=0, column_index=None):
+    def cell(self, value, data=None, column_index=None, column_name=None, row_number=None):
         """Called on each piece of data added into the table"""
-        return self.call_chain('cell', value, data, row_number, column_index)
+        return self.call_chain('cell', value, data, column_index, column_name, row_number)
 
     def footer(self, value):
         """Wrapping the foot calls"""
         return self.call_chain('footer', value)
 
     def foot(self, value):
-        """Called on each piece of data added into the table"""
+        """Iterated for each footer row"""
         return self.call_chain('foot', value)
     
     def finalize(self, value):
