@@ -131,13 +131,17 @@ class DTRowLimit(DTPluginBase):
 class DTGroupBy(DTPluginBase):  
     REQUIRES = [DTHtmlTable] 
     """This class stops the table at a certain amount of rows"""
-    def __init__(self):
-        pass
+    def __init__(self, column):
+        self.column = column
+        self.last_value = None
     
     def row(self, callchain, data, row_number):
-        colspan = str(len(callchain.chain))
-        groupby = E.TR(E.TD('GROUP', E.CLASS(self.add_class_string(callchain.chain.get('class'), ['group'])), colspan=colspan))
-        callchain.pre(groupby)
+        value = callchain.instance.get_data(data, self.column)
+        if self.last_value != value:
+            self.last_value = value
+            colspan = str(len(callchain.chain))
+            groupby = E.TR(E.TD(value, E.CLASS(self.add_class_string(callchain.chain.get('class'), ['group'])), colspan=colspan))
+            callchain.pre(groupby)
 
 
 class DTCallback(DTPluginBase):
