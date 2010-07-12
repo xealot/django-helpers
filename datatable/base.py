@@ -140,6 +140,7 @@ class BaseTable(object):
             method = getattr(plugin, method_name, None)
             if method is not None and callable(method):
                 new_value = method(callchain, *args, **kwargs)
+                #print '%15s:%s %s --> %s' % (plugin.__class__.__name__, method_name, callchain.chain, new_value)
                 if new_value is not None:
                     callchain.chain = new_value
                 #method(callchain, *args, **kwargs)

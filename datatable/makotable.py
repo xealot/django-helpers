@@ -1,20 +1,52 @@
+from functools import partial
 from django.core.urlresolvers import reverse
 from django.utils.safestring import SafeUnicode
 from mako import runtime
 from base import DataTable, DataGrid
-from functools import partial
 
 from ..utilities import get_query_string
 from ..template.templatetags import display_attribute
 
-from base import BaseDictTable
-from plugins import xmlstring, DTUnicode, DTHtmlTable, DTWrapper, DTSelectable, DTCallback
+from base import DTPluginBase
+from djangotable import ModelTable
+from plugins import xmlstring, DTGeneralFormatter, DTUnicode, DTHtmlTable, DTWrapper, DTSelectable, DTCallback
 
-def table2(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
-    plugins = [DTUnicode, DTHtmlTable]
+
+class NGLegacyCSS(DTPluginBase):
+    REQUIRES = [DTHtmlTable]
+    """This class adds javascript sorting to the table headers and tag."""
+    def head(self, callchain, *args):
+        self.add_class(callchain.chain, ['headers hrow'])
+
+
+
+def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
+    listfield_callback = listfield_callback or {}
+
+    #THe crazy mako shit is mostly at the top
+    try:
+        context.caller_stack._push_frame()
+        caller = context.get('caller', runtime.UNDEFINED)
+        capture = context.get('capture', runtime.UNDEFINED)
+
+        for key in fields:
+            index = isinstance(key, (tuple, list)) and key[0] or key
+            #FIRST COLUMN SPECIAL CASE ***DEPRECATED***
+            if key == fields[0] and hasattr(caller, 'td__first'): #First column override :TODO: make this more generic
+                #:TODO: I wish I didn't need to wrap this in a lambda, backward compat issue; also I don't know how passing context to a mako function works.
+                listfield_callback[1] = partial(capture, lambda attr, obj, context: getattr(caller, 'td__first')(attr, obj))
+            #:TODO: can we deprecate this too?
+            if hasattr(caller, 'td_%s' % index):
+                func = getattr(caller, 'td_%s' % index)
+                listfield_callback[key] = partial(capture, partial(lambda func, attr, obj: func(obj), func))
+    finally:
+        context.caller_stack._pop_frame()
+    #End completely crazy mako shit
+
+    plugins = [DTGeneralFormatter, DTUnicode, DTHtmlTable, NGLegacyCSS]
     #Give table appropriate CSS classes
     if listfield_callback:
-        plugins.insert(0, DTCallback(listfield_callback))
+        plugins.insert(2, DTCallback(listfield_callback))
 
     if not classes:
         classes = ['zebra', 'records', 'paging']
@@ -22,13 +54,32 @@ def table2(context, queryset, fields=(), exclude=(), classes=(), record_url=None
         classes = classes + [u"{record_url: '%s'}" % record_url]
 
     if wrapper is True:
-        plugins.append(DTWrapper(style='width: 100%;'))
-    if make_selectable is True:
-        plugins.append(DTSelectable)
-    table = BaseDictTable(plugins=plugins)
-    return xmlstring(table.build(queryset))
+        plugins.append(DTWrapper(classes=classes, style='width: 100%;'))
+    if make_selectable is not False and make_selectable != runtime.UNDEFINED:
+        plugins.append(DTSelectable(make_selectable))
+    table = ModelTable(plugins=plugins)
+    return xmlstring(table.build(queryset, columns=fields, exclude=exclude))
 
-def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
+
+def ajaxstub(context, queryset, record_url, fields=(), exclude=(), listfield_callback=None, make_selectable=False, linker=False, labeler=False):
+    from ajax import stub
+    request = context.get('request')
+    params = context.get('qstats')
+    return stub(queryset, params, record_url, fields, exclude, listfield_callback, make_selectable, linker, labeler)
+
+def ajaxtable(context, queryset, fields=(), exclude=(), listfield_callback=None, make_selectable=False):
+    from ajax import table
+    request = context.get('request')
+    return table(queryset, request.GET, fields, exclude, make_selectable, listfield_callback)
+
+
+
+
+
+
+
+
+def table2(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
     listfield_callback = listfield_callback or {}
     if not classes:
         classes = ['zebra', 'records', 'paging']
