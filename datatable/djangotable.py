@@ -27,4 +27,4 @@ class ModelTable(BaseTable):
                 return get_default_fields(queryset.model, (), exclude or None, include_verbose=True)
     
     def get_data(self, row_data, column_name):
-        return getattr(row_data, column_name)
+        return getattr(row_data, column_name, None)
