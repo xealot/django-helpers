@@ -5,7 +5,7 @@ from makotable import NGLegacyCSS
 
 
 
-def get_plugins(queryset, params, record_url=None, fields=(), exclude=(), listfield_callback=None, make_selectable=False, linker=False, labeler=False, wrapper=False):
+def get_plugins(queryset, params, record_url=None, fields=(), exclude=(), listfield_callback=None, make_selectable=False, linker=False, labeler=False, wrapper=False, additional_plugins=()):
     classes = ['zebra', 'records', 'paging']
     if record_url is not None:
         classes.append("{record_url: '%s'}" % record_url)
@@ -22,15 +22,16 @@ def get_plugins(queryset, params, record_url=None, fields=(), exclude=(), listfi
     if labeler is not False:
         plugins.append(DTLabeler(**labeler))
     plugins.append(DTPagingFooter(params)) #This comes last since it needs to calc colspan.
+    plugins.extend(additional_plugins)
     return plugins
 
-def stub(queryset, params, record_url, fields=(), exclude=(), listfield_callback=None, make_selectable=False, linker=False, labeler=False):
-    plugins = get_plugins(queryset, params, record_url, fields, exclude, listfield_callback, make_selectable, linker, labeler, wrapper=True)
+def stub(queryset, params, record_url, fields=(), exclude=(), listfield_callback=None, make_selectable=False, linker=False, labeler=False, additional_plugins=()):
+    plugins = get_plugins(queryset, params, record_url, fields, exclude, listfield_callback, make_selectable, linker, labeler, wrapper=True, additional_plugins=additional_plugins)
     table = ModelTable(plugins=plugins)
     return xmlstring(table.build(queryset, columns=fields, exclude=exclude))
 
-def table(queryset, params, fields=(), exclude=(), listfield_callback=None, make_selectable=False, linker=False, labeler=False):
+def table(queryset, params, fields=(), exclude=(), listfield_callback=None, make_selectable=False, linker=False, labeler=False, additional_plugins=()):
     record_url = None
-    plugins = get_plugins(queryset, params, record_url, fields, exclude, listfield_callback, make_selectable, linker, labeler)
+    plugins = get_plugins(queryset, params, record_url, fields, exclude, listfield_callback, make_selectable, linker, labeler, additional_plugins)
     table = ModelTable(plugins=plugins, include_header=False, include_footer=False, finalize=False)
     return xmlstring(table.build(queryset, columns=fields, exclude=exclude))
