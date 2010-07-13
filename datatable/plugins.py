@@ -161,7 +161,7 @@ class DTCallback(DTPluginBase):
         if column_name in self.callbacks:
             callback = self.callbacks[column_name]
         if callback is not None:
-            value = callback(column_name, data)
+            value = '<span>%s</span>' % callback(column_name, data)
             if isinstance(value, basestring):
                 #HACK HACK HACK HACK, lxml is supergay when it comes to HTML or not-html. Just can't insert TEXT and have it play nice.
                 #God forbid bad HTML should come along.
