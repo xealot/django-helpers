@@ -38,7 +38,7 @@ def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None,
             #:TODO: can we deprecate this too?
             if hasattr(caller, 'td_%s' % index):
                 func = getattr(caller, 'td_%s' % index)
-                listfield_callback[key] = partial(capture, partial(lambda func, attr, obj: func(obj), func))
+                listfield_callback[index] = partial(capture, partial(lambda func, attr, obj: func(obj), func))
     finally:
         context.caller_stack._pop_frame()
     #End completely crazy mako shit
