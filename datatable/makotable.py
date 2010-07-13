@@ -57,7 +57,7 @@ def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None,
         plugins.append(DTWrapper(classes=classes, style='width: 100%;'))
     if make_selectable is not False and make_selectable != runtime.UNDEFINED:
         plugins.append(DTSelectable(make_selectable))
-    table = ModelTable(plugins=plugins)
+    table = ModelTable(plugins=plugins, finalize=wrapper)
     return xmlstring(table.build(queryset, columns=fields, exclude=exclude))
 
 
