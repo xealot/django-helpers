@@ -2,6 +2,7 @@ from base import BaseTable
 from plugins import *
 from ..general import get_default_fields
 from django.db.models import Count
+from django.db.models.fields import FieldDoesNotExist
 
 
 class ModelTable(BaseTable):
@@ -13,11 +14,11 @@ class ModelTable(BaseTable):
                 if isinstance(column, basestring):
                     # Get labels for what we can.
                     if queryset.model:
-                        f = queryset.model._meta.get_field(column)
-                        if f:
+                        try:
+                            f = queryset.model._meta.get_field(column)
                             new_columns.append([column, f.verbose_name.title()])
-                            continue
-                    new_columns.append([column, column])
+                        except FieldDoesNotExist:
+                            new_columns.append([column, column])
                 else:
                     new_columns.append(column)
             return new_columns
