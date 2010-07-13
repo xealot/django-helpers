@@ -31,15 +31,15 @@ class ModelTable(BaseTable):
         opts = row_data._meta
         try:
             f = opts.get_field(column_name)
-        except models.FieldDoesNotExist:
+        except FieldDoesNotExist:
             # For non-field values, the value is either a method, property or
             # returned via a callable.
             if callable(column_name):
                 attr = column_name
                 value = attr(row_data)
             else:
-                attr = getattr(row_data, column_name)
-                if callable(attr):
+                attr = getattr(row_data, column_name, None)
+                if attr is not None and callable(attr):
                     value = attr()
                 else:
                     value = attr
@@ -47,4 +47,4 @@ class ModelTable(BaseTable):
         else:
             attr = None
             value = getattr(row_data, column_name)
-        return f, attr, value
+        return value
