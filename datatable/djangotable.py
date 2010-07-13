@@ -28,4 +28,23 @@ class ModelTable(BaseTable):
                 return get_default_fields(queryset.model, (), exclude or None, include_verbose=True)
     
     def get_data(self, row_data, column_name):
-        return getattr(row_data, column_name, None)
+        opts = row_data._meta
+        try:
+            f = opts.get_field(column_name)
+        except models.FieldDoesNotExist:
+            # For non-field values, the value is either a method, property or
+            # returned via a callable.
+            if callable(column_name):
+                attr = column_name
+                value = attr(row_data)
+            else:
+                attr = getattr(row_data, column_name)
+                if callable(attr):
+                    value = attr()
+                else:
+                    value = attr
+            f = None
+        else:
+            attr = None
+            value = getattr(row_data, column_name)
+        return f, attr, value
