@@ -262,7 +262,9 @@ class DTPagingFooter(DTPluginBase):
                 <div style="width: 33%%; float:left; text-align: center;">
                     <a href="%(qs_first)s" rel="history" class="table_first">First</a>
                     <a href="%(qs_prev)s" rel="history" class="table_prev">Prev</a>
-                    Page <input type="text" style="width: 20px;" id="ajaxPageNo" value="%(page)s"/> of <span id="ajaxPages">%(pages)s</span>  
+                    Page %(page)s
+                    <!-- <input type="text" style="width: 20px;" id="ajaxPageNo" value="%(page)s"/> --> 
+                    of <span id="ajaxPages">%(pages)s</span>  
                     <a href="%(qs_next)s" rel="history" class="table_next">Next</a>
                     <a href="%(qs_last)s" rel="history" class="table_last">Last</a>
                 </div>
