@@ -4,6 +4,7 @@ from ..general import get_default_fields
 from django.db.models import Count
 from django.db.models.fields import FieldDoesNotExist
 from django.forms.forms import pretty_name
+from django.utils.safestring import mark_safe
 
 
 class ModelTable(BaseTable):
@@ -19,7 +20,7 @@ class ModelTable(BaseTable):
                     if queryset.model:
                         try:
                             f = queryset.model._meta.get_field(column)
-                            new_columns.append([column, f.verbose_name])
+                            new_columns.append([column, pretty_name(f.verbose_name)])
                         except FieldDoesNotExist:
                             if callable(column):
                                 column_verbose = getattr(column, 'short_description', pretty_name(column.func_name))
@@ -58,3 +59,26 @@ class ModelTable(BaseTable):
             attr = None
             value = getattr(row_data, column_name)
         return value
+
+
+class FormsetTable(BaseTable):
+    def iterate(self, data):
+        for i in data.forms:
+            yield i
+            
+    def prepare_columns(self, formset, columns, exclude):
+        if columns:
+            # When columns are specified, only use them as specified.
+            new_columns = []
+            for column in columns:
+                if isinstance(column, basestring):
+                    new_columns.append([column, column])
+                else:
+                    new_columns.append(column)
+            return new_columns
+        elif formset:
+            first_form = formset.forms[0]
+            return [(f.name, f.label) for f in first_form.visible_fields()]
+
+    def get_data(self, row_data, column_name):
+        return mark_safe(row_data[column_name])

@@ -54,7 +54,10 @@ class DTGeneralFormatter(DTPluginBase):
         elif map:
             result_repr = map.get(value, '--')
         elif isinstance(value, (SafeUnicode, SafeString)):
-            result_repr = value
+            try:
+                return etree.fromstring(value)
+            except etree.XMLSyntaxError:
+                result_repr = value
         else:
             result_repr = unicode(value)
         
@@ -196,8 +199,8 @@ class DTRowFormatter(DTPluginBase):
         self.test, self.style, self.css = test, style, css
 
     def row(self, callchain, data, row_number):
-        if self.test(row_number):
-            self.add_class(callchain.chain, [])
+        if self.test(data):
+            self.add_class(callchain.chain, self.css)
 
 
 class DTSpecialFooter(DTPluginBase):

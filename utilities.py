@@ -183,3 +183,9 @@ def random_password(minpairs=3, maxpairs=4):
             vowel = string.upper(vowel)
         password = password + vowel
     return password
+
+def short(short_name):
+    def _short(f):
+        f.short_description = short_name
+        return f
+    return _short

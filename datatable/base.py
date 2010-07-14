@@ -66,6 +66,10 @@ class BaseTable(object):
         for plugin in plugins:
             self.add_plugin(plugin)
 
+    def iterate(self, data):
+        for i in data:
+            yield i
+
     def build(self, data, columns=(), exclude=()):
         """Accepts any iterable with subscriptable access"""
         element_list = []
@@ -98,7 +102,7 @@ class BaseTable(object):
 
     def build_body(self, data, columns):
         body_data, row_number = [], 0
-        for model in data:
+        for model in self.iterate(data):
             row_number += 1
             cells = []
             col_number = 0

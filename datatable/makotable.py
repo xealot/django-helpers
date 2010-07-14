@@ -10,6 +10,8 @@ from ..template.templatetags import display_attribute
 from base import DTPluginBase
 from djangotable import ModelTable
 from plugins import xmlstring, DTGeneralFormatter, DTUnicode, DTHtmlTable, DTWrapper, DTSelectable, DTCallback
+from helpers.dh.datatable.djangotable import FormsetTable
+from helpers.dh.datatable.plugins import DTRowFormatter
 
 
 class NGLegacyCSS(DTPluginBase):
@@ -20,7 +22,8 @@ class NGLegacyCSS(DTPluginBase):
 
 
 
-def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, make_editable=False, listfield_callback=None, wrapper=True, **kwargs):
+def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, row_formatter=False, 
+          make_editable=False, listfield_callback=None, wrapper=True, additional_plugins=(), table_class=ModelTable, **kwargs):
     listfield_callback = listfield_callback or {}
 
     #THe crazy mako shit is mostly at the top
@@ -57,8 +60,17 @@ def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None,
         plugins.append(DTWrapper(classes=classes, style='width: 100%;'))
     if make_selectable is not False and make_selectable != runtime.UNDEFINED:
         plugins.append(DTSelectable(make_selectable))
-    table = ModelTable(plugins=plugins, finalize=wrapper)
+    if row_formatter is not False and row_formatter != runtime.UNDEFINED:
+        plugins.append(DTRowFormatter(test=row_formatter[0], **row_formatter[1]))
+    plugins.extend(additional_plugins)
+    table = table_class(plugins=plugins, finalize=wrapper)
     return xmlstring(table.build(queryset, columns=fields, exclude=exclude))
+
+
+def formtable(context, formset, **kwargs):
+    return table(context, formset, table_class=FormsetTable, **kwargs)
+
+
 
 
 def ajaxstub(context, queryset, record_url, fields=(), exclude=(), listfield_callback=None, make_selectable=False, linker=False, labeler=False):
