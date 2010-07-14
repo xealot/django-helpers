@@ -225,17 +225,6 @@ class DTLinker(DTPluginBase):
             callchain.chain.text = None
 
 
-class DTLabeler(DTPluginBase):
-    def __init__(self, index, label_func=lambda name, data: None, **kwargs):
-        self.index, self.label_func, self.attrs = index, label_func, kwargs
-
-    def cell(self, callchain, data, column_index, column_name, row_number):
-        if column_index == self.index or column_name == self.index:
-            labels = self.label_func(column_name, data)
-            for label in labels:
-                callchain.chain.append(E.SPAN(label, **self.attrs))
-            
-
 from ..querystring import morph
 class DTPagingFooter(DTPluginBase):
     def __init__(self, params):
