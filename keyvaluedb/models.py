@@ -3,6 +3,7 @@ from django.db.models.base import Model
 from django.db import models
 from ..fields.binary import BlobField
 from django.forms import fields
+from django.db.models.query import QuerySet
 
 COERCE_FALSE_VALS = ('0', '', 'False', 'false')
 
@@ -22,6 +23,8 @@ class SavedValue(models.Model):
             return True
         if self.coerce == 'int':
             return int(self.value)
+        if self.coerce == 'exec':
+            return eval(self.value)
     
     class Meta:
         abstract = True
@@ -37,6 +40,8 @@ def get_coercion_from_form(form):
     for k, f in form.base_fields.items():
         if isinstance(f, fields.IntegerField):
             coercion.update({k:'int'})
+        elif isinstance(f, fields.TypedChoiceField) and isinstance(f.coerce, type):
+            coercion.update({k:f.coerce.__name__})
         elif isinstance(f, fields.BooleanField):
             coercion.update({k:'bool'})
     return coercion
@@ -55,6 +60,12 @@ def set_saved_values(dictionary, to=SavedValue, narrow=None, coercion=None):
             val = unicode(v)
             if isinstance(v, Model):
                 val = v.pk
+            elif isinstance(v, (list, tuple, QuerySet)):
+                coerce = 'exec'
+                if v and isinstance(v[0], Model):
+                    val = [m.pk for m in v].__str__()
+                else:
+                    val = v.__str__()
 
             try:
                 to.objects.get(**filter)
