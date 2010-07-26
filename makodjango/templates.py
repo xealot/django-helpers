@@ -26,6 +26,11 @@ def date(context, value, arg=None):
         value = datetime.datetime.now()
     return filters.date(value, arg)
 
+def datestring(context, value, arg=None):
+    from dateutil import parser
+    value = parser.parse(value)
+    return filters.date(value, arg)
+
 #:todo: doesn't belong in std lib
 def ttuple(context, value, arg=None):
     return date(context, datetime.datetime(*(value[0:6])), arg=arg)
