@@ -4,6 +4,15 @@ from django.utils import simplejson as json
 from django import forms
 from django.db import models
 
+#Add south migration rules.
+try:
+    from south.modelsinspector import add_introspection_rules
+    #:TODO: This is hardcoded, I need to figure the path to this class dynamically.
+    add_introspection_rules([], ["helpers\.dh\.fields\.json\.JSONField"])
+except ImportError:
+    pass
+
+
 class JSONWidget(forms.Textarea):
     def render(self, name, value, attrs=None):
         if not isinstance(value, basestring):

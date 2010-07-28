@@ -1,6 +1,16 @@
 from django.db.models.fields import Field
 from django.forms import fields as form_fields
 
+#Add south migration rules.
+try:
+    from south.modelsinspector import add_introspection_rules
+    #:TODO: This is hardcoded, I need to figure the path to this class dynamically. A partial RE doesn't seem to work
+    add_introspection_rules([], ["helpers\.dh\.fields\.binary\.BlobField"])
+    add_introspection_rules([], ["helpers\.dh\.fields\.binary\.BinaryField"])
+    add_introspection_rules([], ["helpers\.dh\.fields\.binary\.InlineImageField"])
+except ImportError:
+    pass
+
 
 class BinaryField(Field):
     """Sometimes we have fields that need to store a small amount of binary
