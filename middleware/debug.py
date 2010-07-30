@@ -43,6 +43,9 @@ class DebugMiddleware(object):
         return None
 
     def should_debug(self, request, response):
+        if not hasattr(request, DEBUG_FLAG):
+            #This happens when the request is thrown away and a new one used instead. Common on middleware exceptions
+            setattr(request, DEBUG_FLAG, settings.DEBUG)
         if getattr(request, DEBUG_FLAG) is False:
             return False
         if getattr(response, DEBUG_FLAG, True) is False:
