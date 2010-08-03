@@ -32,6 +32,9 @@ def datestring(context, value, arg=None):
     return filters.date(value, arg)
 
 #:todo: doesn't belong in std lib
+def dollars(context, cents):
+    return '%.2f' % (float(cents)/100)
+
 def ttuple(context, value, arg=None):
     return date(context, datetime.datetime(*(value[0:6])), arg=arg)
 
