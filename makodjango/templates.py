@@ -28,6 +28,8 @@ def date(context, value, arg=None):
 
 def datestring(context, value, arg=None):
     from dateutil import parser
+    if value is None:
+        return 'Never'
     value = parser.parse(value)
     return filters.date(value, arg)
 
