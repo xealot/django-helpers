@@ -170,16 +170,16 @@ class DBForm(BaseForm):
                 if field.type_id == TYPE_IMAGE: #Image Field
                     if isinstance(v, basestring) and v == '--remove--':
                         raise DBFormSettingPurge()
-                    value = hashlib.sha224(str(v.file)).hexdigest()
+                    value = hashlib.sha224(unicode(v.file)).hexdigest()
                     to.objects.filter(**filter).update(value=value, blob=v.file)
                 else:
-                    to.objects.filter(**filter).update(value=str(v))
+                    to.objects.filter(**filter).update(value=unicode(v))
             except to.DoesNotExist:
                 if field.type_id == TYPE_IMAGE: #Image Field
-                    value = hashlib.sha224(str(v.file)).hexdigest()
+                    value = hashlib.sha224(unicode(v.file)).hexdigest()
                     to.objects.create(value=value, blob=v.file, **filter)
                 else:
-                    to.objects.create(value=str(v), **filter)
+                    to.objects.create(value=unicode(v), **filter)
             except MultipleObjectsReturned:
                 raise Exception('Multiple objects where returned during the get step of saving. This means your narrow parameter is not sufficient.')
             except DBFormSettingPurge:
