@@ -88,8 +88,6 @@ class ExistingImageField(ImageField):
             raise ValidationError('Please limit the image to 125KB in size. Your image was larger than this.')
 
 
-class DBFormSettingPurge(Exception): pass
-
 class DBForm(BaseForm):
     """
     This for class is geared to reading and writing from the dbform application. It also has some special cases 
@@ -169,18 +167,20 @@ class DBForm(BaseForm):
                 to.objects.get(**filter)
                 if field.type_id == TYPE_IMAGE: #Image Field
                     if isinstance(v, basestring) and v == '--remove--':
-                        raise DBFormSettingPurge()
+                        to.objects.filter(**filter).delete()
+                        continue
                     value = hashlib.sha224(unicode(v.file)).hexdigest()
                     to.objects.filter(**filter).update(value=value, blob=v.file)
                 else:
                     to.objects.filter(**filter).update(value=unicode(v))
             except to.DoesNotExist:
                 if field.type_id == TYPE_IMAGE: #Image Field
+                    if isinstance(v, basestring) and v == '--remove--':
+                        to.objects.filter(**filter).delete()
+                        continue
                     value = hashlib.sha224(unicode(v.file)).hexdigest()
                     to.objects.create(value=value, blob=v.file, **filter)
                 else:
                     to.objects.create(value=unicode(v), **filter)
             except MultipleObjectsReturned:
                 raise Exception('Multiple objects where returned during the get step of saving. This means your narrow parameter is not sufficient.')
-            except DBFormSettingPurge:
-                to.objects.filter(**filter).delete()
