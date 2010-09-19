@@ -47,9 +47,9 @@ def redirect(*args, **kwargs):
     if 'url' in kwargs:
         return HttpResponseRedirect(kwargs['url'])
     
-    qs = ''
-    if 'qs' in kwargs:
-        qs = '?'+urlencode(kwargs.pop('qs'), True)
+    qs = kwargs.pop('qs', '')
+    if qs:
+        qs = '?'+urlencode(qs, True)
     
     return HttpResponseRedirect(reverse(*args, **kwargs)+qs)
 
