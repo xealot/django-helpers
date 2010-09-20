@@ -163,7 +163,8 @@ class DBForm(BaseForm):
                 continue
             try:
                 if v is None or v == '':
-                    raise DBFormSettingPurge()
+                    to.objects.filter(**filter).delete()
+                    continue
                 to.objects.get(**filter)
                 if field.type_id == TYPE_IMAGE: #Image Field
                     if isinstance(v, basestring) and v == '--remove--':
