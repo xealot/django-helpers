@@ -40,7 +40,7 @@ class Field(models.Model):
                              help_text="The type of form field the system should associate with this variable.")
     name = models.CharField(max_length=100, verbose_name="Name")
     #verbose_name = models.CharField(max_length=100, verbose_name="Long name for Field")
-    field_data = models.CharField(max_length=1000, blank=True, null=True, verbose_name="Extra Data", 
+    field_data = models.TextField(max_length=1000, blank=True, null=True, verbose_name="Extra Data", 
                                   help_text="Based on the field type chosen you may need to enter data in this field. (e.g. If this field type is a choice field, choices would go here)")
     nonfield_data = JSONField(blank=True, null=True, verbose_name="Extra data for internal use")
     html_attr = models.CharField(max_length=1000, blank=True, null=True, verbose_name="Html Attributes",
