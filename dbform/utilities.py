@@ -4,15 +4,8 @@ from django.db import models
 from cgi import parse_qs
 from django.utils import simplejson as json
 from django.template import Context, Template
-from forms import DBForm, ExistingImageField, TYPE_BOOL
 
 COERCE_BOOLEAN_VALUES = ('no', 'false', '0', '')
-
-def dbform_factory(formdef, querysets=None):
-    """
-    Legacy location, check DBForm module
-    """
-    return DBForm.create(formdef, querysets)
 
 #:TODO: this might be a little dangerous, when an RE and resolve function will do.
 def resolve_default(context, text):
@@ -21,6 +14,7 @@ def resolve_default(context, text):
     return text
 
 def coerce_field(field, value):
+    from forms import TYPE_BOOL
     if field.type_id == TYPE_BOOL:
         if value.lower() in COERCE_BOOLEAN_VALUES:
             return False
@@ -31,7 +25,7 @@ def coerce_field(field, value):
 def dbform_resolve(field_value_dict, context):
     for f, v in field_value_dict.items():
         field_value_dict[f] = coerce_field(f, resolve_default(context, v))
-    return field_value_dict    
+    return field_value_dict
 
 #:TODO: this is cacheable.
 def dbform_defaults(formdef, context=None, resolve=True):

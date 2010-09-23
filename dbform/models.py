@@ -3,7 +3,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from ..utilities import slugify
 from ..fields.json import JSONField
-from ..fields.binary import BlobField
 from ..keyvaluedb.models import SavedValue as KVDBValues
 
 
@@ -25,10 +24,6 @@ class FormDef(models.Model):
     content_type = models.ForeignKey(ContentType, editable=False)
     object_id = models.PositiveIntegerField(editable=False)
     content_object = generic.GenericForeignKey('content_type', 'object_id')
-
-    def create_form(self, querysets=None):
-        from utilities import dbform_factory #Avoid circular import
-        return dbform_factory(self, querysets)
 
     def __unicode__(self):
         return self.name
