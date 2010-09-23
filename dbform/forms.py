@@ -12,6 +12,8 @@ from django.core.exceptions import MultipleObjectsReturned, ValidationError
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
+from utilities import resolve_default
+
 BLOB_SIZE_LIMIT = 128000
 
 TYPE_TEXT = 1
@@ -88,6 +90,15 @@ class ExistingImageField(ImageField):
             raise ValidationError('Please limit the image to 125KB in size. Your image was larger than this.')
 
 
+def parse_field_data(data):
+    field_data = []
+    for row in data.split('\n'):
+        row = row.strip()
+        label, _, value = row.partition('|')
+        field_data.append((value.strip(), label.strip()))
+    return field_data
+
+
 class DBForm(BaseForm):
     """
     This for class is geared to reading and writing from the dbform application. It also has some special cases 
@@ -95,7 +106,7 @@ class DBForm(BaseForm):
     """
 
     @staticmethod
-    def create(formdef, querysets=None, image_resolver=None):
+    def create(formdef, context, querysets=None, image_resolver=None):
         """Take a FormDef instance and create a real django form out of it"""
         base_fields = SortedDict()
         key_to_field_id = {} #This is so the save function on DBForm has enough information to save
@@ -103,9 +114,10 @@ class DBForm(BaseForm):
             key_to_field_id[field.key] = field
             if field.editable is False:
                 continue
-            default_args = {'required': field.required, 'help_text': field.help_text, 'label': field.label, 'initial': field.default}
+            default_args = {'required': field.required, 'help_text': resolve_default(context, field.help_text), 
+                            'label': resolve_default(context, field.label), 'initial': field.default}
             if field.type_id == TYPE_CHOICE:
-                choices = [(v,v) for v in field.field_data.split('|')]
+                choices = parse_field_data(resolve_default(context, field.field_data))
                 base_fields[field.key] = forms.ChoiceField(choices=choices, widget=forms.RadioSelect, **default_args)
             elif field.type_id == TYPE_DB_ENTITY:
                 if querysets is not None and field.key in querysets:
