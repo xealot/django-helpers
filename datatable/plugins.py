@@ -154,8 +154,26 @@ class DTCallback(DTPluginBase):
     There is some super hacky shit making this work right now, as you can see in CELL. I should 
     probably work to remove this garbage.
     """
-    def __init__(self, callbacks):
+    def __init__(self, callbacks, header_callbacks=None):
         self.callbacks = callbacks
+        self.header_callbacks = header_callbacks
+
+    def header(self, callchain, column_index):
+        callback = None
+        if column_index in self.header_callbacks:
+            callback = self.header_callbacks[column_index]
+        if callback is not None:
+            value = '<span>%s</span>' % callback(column_index, data)
+            if isinstance(value, basestring):
+                #HACK HACK HACK HACK, lxml is supergay when it comes to HTML or not-html. Just can't insert TEXT and have it play nice.
+                #God forbid bad HTML should come along.
+                try:
+                    return etree.fromstring(value)
+                except etree.XMLSyntaxError:
+                    return value
+            elif isinstance(value, (list, tuple)):
+                return [etree.fromstring(i) for i in value]
+            return value
     
     def cell(self, callchain, data, column_index, column_name, row_number):
         callback = None

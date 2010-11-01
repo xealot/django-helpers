@@ -25,6 +25,7 @@ class NGLegacyCSS(DTPluginBase):
 def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None, instance=None, make_selectable=False, row_formatter=False, 
           make_editable=False, listfield_callback=None, wrapper=True, additional_plugins=(), table_class=ModelTable, **kwargs):
     listfield_callback = listfield_callback or {}
+    header_callback = {}
 
     #THe crazy mako shit is mostly at the top
     try:
@@ -42,6 +43,9 @@ def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None,
             if hasattr(caller, 'td_%s' % index):
                 func = getattr(caller, 'td_%s' % index)
                 listfield_callback[index] = partial(capture, partial(lambda func, attr, obj: func(obj), func))
+            if hasattr(caller, 'th_%s' % index):
+                func = getattr(caller, 'th_%s' % index)
+                header_callback[index] = partial(capture, partial(lambda func, attr, obj: func(obj), func))
     finally:
         context.caller_stack._pop_frame()
     #End completely crazy mako shit
@@ -49,7 +53,7 @@ def table(context, queryset, fields=(), exclude=(), classes=(), record_url=None,
     plugins = [DTGeneralFormatter, DTUnicode, DTHtmlTable, NGLegacyCSS]
     #Give table appropriate CSS classes
     if listfield_callback:
-        plugins.insert(2, DTCallback(listfield_callback))
+        plugins.insert(2, DTCallback(listfield_callback, header_callback))
 
     if not classes:
         classes = ['zebra', 'records', 'paging']
