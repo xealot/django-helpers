@@ -23,7 +23,7 @@ def xmlstring(xmltable, method='xml', encoding=unicode, pretty_print=False):
 
 
 class DTUnicode(DTPluginBase):
-    def header(self, callchain, column_index):
+    def header(self, callchain, column_index, column_name):
         return force_unicode(callchain.chain)
 
     def cell(self, callchain, data, column_index, column_name, row_number):
@@ -77,7 +77,7 @@ class DTHtmlTable(DTPluginBase):
     def head(self, callchain):
         return E.THEAD(*callchain.chain)
     
-    def header(self, callchain, column_index):
+    def header(self, callchain, column_index, column_name):
         return E.TH(callchain.chain)
 
     def body(self, callchain):
@@ -158,12 +158,14 @@ class DTCallback(DTPluginBase):
         self.callbacks = callbacks
         self.header_callbacks = header_callbacks
 
-    def header(self, callchain, column_index):
+    def header(self, callchain, column_index, column_name):
         callback = None
         if column_index in self.header_callbacks:
             callback = self.header_callbacks[column_index]
+        if column_name in self.header_callbacks:
+            callback = self.header_callbacks[column_name]
         if callback is not None:
-            value = '<span>%s</span>' % callback(column_index, data)
+            value = '<span>%s</span>' % callback()
             if isinstance(value, basestring):
                 #HACK HACK HACK HACK, lxml is supergay when it comes to HTML or not-html. Just can't insert TEXT and have it play nice.
                 #God forbid bad HTML should come along.

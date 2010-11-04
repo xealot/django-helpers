@@ -97,7 +97,7 @@ class BaseTable(object):
     def build_headers(self, data, columns):
         headers = []
         for header in columns:
-            headers.extend(self.header(header[1]))
+            headers.extend(self.header(header[1], None, header[0]))
         return headers or None
 
     def build_body(self, data, columns):
@@ -154,9 +154,9 @@ class BaseTable(object):
         """Called once before row iteration"""
         return self.call_chain('head', value)
 
-    def header(self, value, column_index=None):
+    def header(self, value, column_index=None, column_name=None):
         """Called for every header"""
-        return self.call_chain('header', value, column_index=None)
+        return self.call_chain('header', value, column_index, column_name)
 
     def body(self, value):
         """Called once before row iteration"""
