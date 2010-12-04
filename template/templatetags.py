@@ -102,9 +102,9 @@ def css_tags(media_url='/public'):
     return ''
 
 def js_tags(media_url='/public'):
-    if hasattr(settings, 'DEPLOY_JS'):
+    if hasattr(settings, 'JS_FILES'):
         output = []
-        for t in settings.DEPLOY_JS:
+        for t in settings.JS_FILES:
             output.append('<script src="%s/%s" type="text/javascript"></script>' % (media_url, t))
         return '\n'.join(output)
     return ''
