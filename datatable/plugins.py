@@ -75,7 +75,7 @@ class DTGeneralFormatter(DTPluginBase):
 class DTHtmlTable(DTPluginBase):
     REQUIRES = [DTUnicode]
     def head(self, callchain):
-        return E.THEAD(*callchain.chain)
+        return E.THEAD(E.TR(*callchain.chain))
     
     def header(self, callchain, column_index, column_name):
         return E.TH(callchain.chain)
