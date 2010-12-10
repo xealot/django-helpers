@@ -4,7 +4,7 @@ Data table plugins
 from cgi import escape
 from base import DTPluginBase
 from lxml import etree
-from lxml.html import builder as E
+from lxml.html import builder as E, fragments_fromstring
 from django.utils.encoding import force_unicode
 
 #General Formatt needs these deps
@@ -78,7 +78,11 @@ class DTHtmlTable(DTPluginBase):
         return E.THEAD(E.TR(*callchain.chain))
     
     def header(self, callchain, column_index, column_name):
-        return E.TH(callchain.chain)
+        chain = callchain.chain if isinstance(callchain.chain, (list, tuple)) else [callchain.chain]
+        if len(chain) == 1 and isinstance(chain[0], etree._Element) and chain[0].tag == 'th':
+            #If any element is a TH, we shouldn't wrap it in our own TH
+            return chain[0]
+        return E.TH(*callchain.chain)
 
     def body(self, callchain):
         return E.TBODY(*callchain.chain)
@@ -87,7 +91,11 @@ class DTHtmlTable(DTPluginBase):
         return E.TR(*callchain.chain)
     
     def cell(self, callchain, data, column_index, column_name, row_number):
-        return E.TD(callchain.chain)
+        chain = callchain.chain if isinstance(callchain.chain, (list, tuple)) else [callchain.chain]
+        if len(chain) == 1 and isinstance(chain[0], etree._Element) and chain[0].tag == 'td':
+            #If any element is a TH, we shouldn't wrap it in our own TH
+            return chain[0]
+        return E.TD(*callchain.chain)
 
     def finalize(self, callchain):
         return E.TABLE(*callchain.chain)
@@ -165,12 +173,11 @@ class DTCallback(DTPluginBase):
         if column_name in self.header_callbacks:
             callback = self.header_callbacks[column_name]
         if callback is not None:
-            value = '<span>%s</span>' % callback()
+            value = callback()
             if isinstance(value, basestring):
-                #HACK HACK HACK HACK, lxml is supergay when it comes to HTML or not-html. Just can't insert TEXT and have it play nice.
-                #God forbid bad HTML should come along.
                 try:
-                    return etree.fromstring(value)
+                    #print 'here', etree.fromstring(value)
+                    return fragments_fromstring(value)
                 except etree.XMLSyntaxError:
                     return value
             elif isinstance(value, (list, tuple)):
@@ -184,12 +191,10 @@ class DTCallback(DTPluginBase):
         if column_name in self.callbacks:
             callback = self.callbacks[column_name]
         if callback is not None:
-            value = '<span>%s</span>' % callback(column_name, data)
+            value = callback(column_name, data)
             if isinstance(value, basestring):
-                #HACK HACK HACK HACK, lxml is supergay when it comes to HTML or not-html. Just can't insert TEXT and have it play nice.
-                #God forbid bad HTML should come along.
                 try:
-                    return etree.fromstring(value)
+                    return fragments_fromstring(value)
                 except etree.XMLSyntaxError:
                     return value
             elif isinstance(value, (list, tuple)):
