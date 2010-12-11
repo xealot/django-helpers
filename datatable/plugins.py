@@ -209,10 +209,9 @@ class DTSelectable(DTPluginBase):
     def finalize(self, callchain):
         self.add_class(callchain.chain, ['selectable'])
 
-    def head(self, callchain):
-        callchain.chain.insert(self.index, E.TH(
-            E.INPUT(E.CLASS('master'), type='checkbox', name='%s-master' % self.checkbox_name), 
-        width='1'))
+    def header(self, callchain, column_index, column_name):
+        if column_index == self.index:
+            callchain.pre(E.TH(E.INPUT(E.CLASS('master'), type='checkbox', name='%s-master' % self.checkbox_name), width='1'))
 
     def row(self, callchain, data, row_number):
         callchain.chain.insert(self.index, E.TD(E.INPUT(type='checkbox', name=str(self.checkbox_name), value=str(callchain.instance.get_data(data, self.attribute)))))
@@ -256,7 +255,7 @@ class DTPagingFooter(DTPluginBase):
         self.params = params
 
     def head(self, callchain):
-        self.colspan = str(len(callchain.chain))
+        self.colspan = str(len(callchain.chain[0]))
 
     def footer(self, callchain):
         return E.TFOOT(id='ajaxPager', *callchain.chain)
