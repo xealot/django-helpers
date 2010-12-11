@@ -95,9 +95,10 @@ class BaseTable(object):
         return element_list
 
     def build_headers(self, data, columns):
-        headers = []
+        headers, index = [], 0
         for header in columns:
-            headers.extend(self.header(header[1], None, header[0]))
+            headers.extend(self.header(header[1], index, header[0]))
+            index += 1
         return headers or None
 
     def build_body(self, data, columns):
