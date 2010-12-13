@@ -82,7 +82,7 @@ class DTHtmlTable(DTPluginBase):
         if len(chain) == 1 and isinstance(chain[0], etree._Element) and chain[0].tag == 'th':
             #If any element is a TH, we shouldn't wrap it in our own TH
             return chain[0]
-        return E.TH(*callchain.chain)
+        return E.TH(*chain)
 
     def body(self, callchain):
         return E.TBODY(*callchain.chain)
@@ -95,7 +95,7 @@ class DTHtmlTable(DTPluginBase):
         if len(chain) == 1 and isinstance(chain[0], etree._Element) and chain[0].tag == 'td':
             #If any element is a TH, we shouldn't wrap it in our own TH
             return chain[0]
-        return E.TD(*callchain.chain)
+        return E.TD(*chain)
 
     def finalize(self, callchain):
         return E.TABLE(*callchain.chain)
