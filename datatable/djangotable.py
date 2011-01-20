@@ -17,7 +17,7 @@ class ModelTable(BaseTable):
                     new_columns.append(column)
                 else:
                     # Get labels for what we can.
-                    if queryset.model:
+                    if getattr(queryset, 'model', None):
                         try:
                             f = queryset.model._meta.get_field(column)
                             new_columns.append([column, pretty_name(f.verbose_name)])
