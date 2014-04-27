@@ -94,9 +94,9 @@ def mediaurl(value, base_url=None):
     return '%s%s?%s' % (base_url, value, unicode(int(os.stat(fname).st_mtime)))
 
 def css_tags(media_url='/public'):
-    if hasattr(settings, 'DEPLOY_CSS'):
+    if hasattr(settings, 'CSS_FILES'):
         output = []
-        for t in settings.DEPLOY_CSS:
+        for t in settings.CSS_FILES:
             output.append('<link rel="stylesheet" href="%s/%s" type="text/css" media="screen" />' % (media_url, t))
         return '\n'.join(output)
     return ''
