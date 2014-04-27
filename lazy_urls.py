@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.conf.urls.defaults import url
+from django.conf.urls import url
 from django.utils.importlib import import_module
 from django.utils.module_loading import module_has_submodule
 import inspect
