@@ -48,7 +48,7 @@ class DTGeneralFormatter(DTPluginBase):
                 result_repr = capfirst(dateformat.format(value, settings.DATE_FORMAT))
         elif isinstance(value, bool):
             BOOLEAN_MAPPING = {True: 'yes', False: 'no', None: 'unknown'}
-            result_repr = E.IMG(src="%simg/admin/icon-%s.gif" % (settings.ADMIN_MEDIA_PREFIX, BOOLEAN_MAPPING[value]), alt="%s" % value)
+            result_repr = E.IMG(src="%sadmin/img/icon-%s.gif" % (settings.ADMIN_MEDIA_PREFIX, BOOLEAN_MAPPING[value]), alt="%s" % value)
         elif isinstance(value, (float, Decimal)):
             result_repr = (u'%%.%sf' % places) % value
         elif map:
