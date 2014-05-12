@@ -83,7 +83,7 @@ def general_formatter(value, cast=None, **kwargs):
 #:TODO: make this image a settings entry, default to the admin version
 def _boolean_icon(field_val):
     BOOLEAN_MAPPING = {True: 'yes', False: 'no', None: 'unknown'}
-    return mark_safe(u'<img src="%simg/admin/icon-%s.gif" alt="%s" />' % (settings.ADMIN_MEDIA_PREFIX, BOOLEAN_MAPPING[field_val], field_val))
+    return mark_safe(u'<img src="%sadmin/img/icon-%s.gif" alt="%s" />' % (settings.ADMIN_MEDIA_PREFIX, BOOLEAN_MAPPING[field_val], field_val))
 
 #http://www.davidcramer.net/code/429/scaling-your-frontend-far-futures-headers-and-template-tags.html
 def mediaurl(value, base_url=None):
