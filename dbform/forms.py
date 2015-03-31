@@ -133,7 +133,7 @@ class DBForm(BaseForm):
                 ir = callable(image_resolver) and functools.partial(image_resolver, field.key) or None 
                 base_fields[field.key] = ExistingImageField(image_resolver=ir, **default_args)
             elif field.type_id == TYPE_LARGE_TEXT:
-                base_fields[field.key] = forms.CharField(widget=forms.Textarea, **default_args)
+                base_fields[field.key] = forms.CharField(widget=forms.Textarea(attrs={'class': 'wysiwyg'}), **default_args)
             else:
                 base_fields[field.key] = forms.CharField(max_length=100, **default_args)
     
